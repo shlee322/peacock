@@ -1,0 +1,2 @@
+var AUTH_HOST = '';
+

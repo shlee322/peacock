@@ -1,0 +1,42 @@
+{% extends "layout.html" %}
+{% block css %}
+<link href="/static/css/main/main.css" rel="stylesheet">
+{% endblock %}
+{% block body %}
+<div class="site-wrapper">
+<div class="site-wrapper-inner">
+<div class="cover-container">
+<div class="masthead clearfix">
+<div class="inner">
+<h3 class="masthead-brand">Peacock</h3>
+<nav>
+<ul class="nav masthead-nav">
+<li class="active"><a href="#">Home</a></li>
+</ul>
+</nav>
+</div>
+</div>
+
+<div class="inner cover">
+<h1 class="cover-heading">Peacock</h1>
+<p class="lead">Peacock을 이용하여 여러분의 서비스를 모니터링하고 분석할 수 있습니다.</p>
+<p class="lead">
+<button type="button" class="btn btn-lg btn-default" data-toggle="modal" data-target="#loginModal">Login</button>
+<button type="button" class="btn btn-lg btn-success" data-toggle="modal" data-target="#joinModal">Join</button>
+</p>
+</div>
+
+<div class="mastfoot">
+<div class="inner">
+<p>Copyright ⓒ 2014 <a href="#">Peacock</a> All Rights Reserved</p>
+</div>
+</div>
+
+</div>
+
+</div>
+</div>
+
+{% include "main/login_modal.html" %}
+{% include "main/join_modal.html" %}
+{% endblock %}
