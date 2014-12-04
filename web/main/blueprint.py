@@ -8,6 +8,14 @@ def main_root():
     return render_template('main/main.html')
 
 
+@blueprint.route('/logout')
+def main_logout():
+    from flask import session, redirect
+    session['account_uid'] = None
+    session['account_username'] = None
+    return redirect('/')
+
+
 @blueprint.route('/_ajax/login', methods=['POST'])
 def main_login():
     data = request.get_json()
