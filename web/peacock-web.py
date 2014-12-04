@@ -31,8 +31,10 @@ def teardown_request(exception):
         db.close()
 
 
+import auth.blueprint
 import main.blueprint
 import manager.blueprint
+app.register_blueprint(auth.blueprint.blueprint)
 app.register_blueprint(main.blueprint.blueprint)
 app.register_blueprint(manager.blueprint.blueprint)
 

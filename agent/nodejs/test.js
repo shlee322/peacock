@@ -1,6 +1,7 @@
 var peacock = require('./peacock.js');
 
 var options = {
+  'key_file': __dirname + '/test_private.pem'
 };
 
 peacock.init(options, function(err){

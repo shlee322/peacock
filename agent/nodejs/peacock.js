@@ -1,28 +1,46 @@
 var AUTH_URL = 'http://localhost:5000/auth';
 
-function initPeacock(options, cb) {
+var TOKEN = '';
 
-    var request = require('request');
+function initPeacock(config, cb) {
+    var fs = require('fs');
 
-    var options = {
-      uri: AUTH_URL,
-      method: 'POST',
-      json: {
-      }
-    };
-
-    request(options, function (error, response, body) {
-        if(error) {
-            cb(error);
-            return;
+    fs.readFile(config.key_file, 'utf-8', function (err, data) {
+        if (err) {
+            throw err;
         }
 
-        if(response.statusCode != 200) {
-            cb(response.statusCode);
-            return;
-        }
+        var NodeRSA = require('node-rsa');
+        var key = new NodeRSA(data);
 
-        cb();
+        //var encrypted = key.encrypt();
+
+        var request = require('request');
+
+        var options = {
+          uri: AUTH_URL,
+          method: 'POST',
+          json: {
+              'server_id': config.server_id,
+              'key': 'asfd',
+          }
+        };
+
+        request(options, function (error, response, body) {
+            if(error) {
+                cb(error);
+                return;
+            }
+
+            if(response.statusCode != 200) {
+                cb(response.statusCode);
+                return;
+            }
+
+            TOKEN = body.token;
+
+            cb();
+        });
     });
 }
 
@@ -45,6 +63,7 @@ Entity.prototype.event = function (name, data, date, date2) {
     }
 
     console.log('event' + this.kind + ' ' + name);
+    console.log(TOKEN);
 };
 
 var seq = 0;
