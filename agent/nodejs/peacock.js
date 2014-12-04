@@ -1,7 +1,28 @@
 var AUTH_URL = 'http://localhost:5000/auth';
 
 function initPeacock(cb) {
-    cb();
+    var request = require('request');
+
+    var options = {
+      uri: AUTH_URL,
+      method: 'POST',
+      json: {
+      }
+    };
+
+    request(options, function (error, response, body) {
+        if(error) {
+            cb(error);
+            return;
+        }
+
+        if(response.statusCode != 200) {
+            cb(response.statusCode);
+            return;
+        }
+
+        cb();
+    });
 }
 
 function Entity(kind, id) {
