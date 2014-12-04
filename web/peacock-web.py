@@ -6,6 +6,9 @@ app.debug = True
 import config
 app.config.from_object(config)
 
+from redissession import RedisSessionInterface
+app.session_interface = RedisSessionInterface()
+
 
 def connect_db():
     import pymysql

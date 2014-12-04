@@ -12,9 +12,36 @@ def main_root():
 def main_login():
     data = request.get_json()
 
+    from flask import g
+    # 아이디 체크
+    username = data['username']
+    cur = g.db.cursor()
+    cur.execute('SELECT `uid`, `password` FROM `accounts` WHERE `username`=%(username)s;', {
+        'username': username
+    })
+
+    account_obj = cur.fetchone()
+    if not account_obj:
+        return jsonify({
+            'status': 'failed',
+            'message': '존재하지 않는 아이디입니다'
+        })
+
+    password = data['password'][:64].encode('utf-8')
+    password_hash = account_obj[1].encode('utf-8')
+    import bcrypt
+    if bcrypt.hashpw(password, password_hash) != password_hash:
+        return jsonify({
+            'status': 'failed',
+            'message': '비밀번호가 올바르지 않습니다'
+        })
+
+    from flask import session
+    session['account_uid'] = account_obj[0]
+    session['account_username'] = username
+
     return jsonify({
-        'status': 'failed',
-        'message': '존재하지 않는 아이디입니다'
+        'status': 'succeeded'
     })
 
 
@@ -72,7 +99,13 @@ def main_join():
             'message': '알 수 없는 에러가 발생하였습니다. 잠시후 다시 시도해주세요.'
         })
 
+    account_uid = g.db.insert_id()
+
     g.db.commit()
+
+    from flask import session
+    session['account_uid'] = account_uid
+    session['account_username'] = username
 
     return jsonify({
         'status': 'succeeded'

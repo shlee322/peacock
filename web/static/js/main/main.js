@@ -35,7 +35,7 @@ peacock.controller('loginController', function($scope, $http) {
                 return;
             }
 
-            //test
+            document.location = '/manager/';
         });
     }
 });
@@ -104,7 +104,7 @@ peacock.controller('joinController', function($scope, $http) {
                 return;
             }
 
-            //test
+            document.location = '/manager/';
         });
     }
 });
