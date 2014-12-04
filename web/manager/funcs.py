@@ -19,6 +19,17 @@ def get_account_services():
     return services
 
 
+def get_service_uid(service_id):
+    from flask import g
+
+    cur = g.db.cursor()
+    cur.execute('SELECT `uid` FROM `services` WHERE `service_id`=%(service_id)s;', {
+        'service_id': service_id
+    })
+    row = cur.fetchone()
+    return row[0]
+
+
 def get_service_name(service_id):
     from flask import g
 

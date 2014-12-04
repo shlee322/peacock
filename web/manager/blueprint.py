@@ -6,20 +6,25 @@ blueprint = Blueprint('manager', __name__, template_folder='templates')
 @blueprint.before_request
 def manager_before_request():
     from flask import session
+
     if not session.get('account_uid'):
         from flask import redirect
+
         return redirect('/')
 
     from .funcs import get_account_services
+
     g.services = get_account_services()
 
 
 @blueprint.route('/manager/')
 def manager_root():
     from .funcs import get_account_services
+
     services = get_account_services()
 
     from flask import redirect
+
     if len(services) < 1:
         return redirect('/manager/create')
     else:
@@ -39,6 +44,7 @@ def manager_create_ajax():
     service_name = data['service_name']
 
     import re
+
     if not re.match("^[a-z0-9-]{8,128}$", service_id):
         return jsonify({
             'status': 'failed',
@@ -52,6 +58,7 @@ def manager_create_ajax():
         })
 
     from flask import g
+
     cur = g.db.cursor()
     cur.execute('SELECT * FROM `services` WHERE `service_id`=%(service_id)s;', {
         'service_id': service_id
@@ -65,6 +72,7 @@ def manager_create_ajax():
 
     from flask import session
     import pymysql
+
     try:
         cur.execute('INSERT INTO `services` (`service_id`, `service_name`, `create_time`) ' +
                     'VALUES (%(service_id)s, %(service_name)s, now());', {
@@ -99,42 +107,121 @@ def manager_create_ajax():
 @blueprint.route('/manager/<service_id>/')
 def manager_service_main(service_id):
     from .funcs import get_service_name
+
     service_name = get_service_name(service_id)
     from flask import redirect
+
     return redirect('/manager/%s/dashboard' % service_id)
 
 
 @blueprint.route('/manager/<service_id>/dashboard')
 def manager_service_dashboard(service_id):
     from .funcs import get_service_name, get_menus
+
     service_name = get_service_name(service_id)
     menus = get_menus('dashboard')
 
-    return render_template('manager/setting/serverkey.html', **locals())
+    return render_template('manager/eventviewer/eventviwer.html', **locals())
 
 
 @blueprint.route('/manager/<service_id>/eventviewer')
 def manager_service_eventviewer(service_id):
     from .funcs import get_service_name, get_menus
+
     service_name = get_service_name(service_id)
     menus = get_menus('eventviewer')
 
-    return render_template('manager/setting/serverkey.html', **locals())
+    return render_template('manager/eventviewer/eventviwer.html', **locals())
 
 
 @blueprint.route('/manager/<service_id>/analyzer')
 def manager_service_analyzer(service_id):
     from .funcs import get_service_name, get_menus
+
     service_name = get_service_name(service_id)
     menus = get_menus('analyzer')
 
-    return render_template('manager/setting/serverkey.html', **locals())
+    return render_template('manager/eventviewer/eventviwer.html', **locals())
 
 
 @blueprint.route('/manager/<service_id>/setting')
 def manager_service_setting(service_id):
     from .funcs import get_service_name, get_menus
+
     service_name = get_service_name(service_id)
     menus = get_menus('setting')
 
+    from .funcs import get_service_uid
+    service_uid = get_service_uid(service_id)
+
+    cur = g.db.cursor()
+    cur.execute('SELECT `id`, `key` FROM `service_server_keys` WHERE `service_uid`=%(service_uid)s;', {
+        'service_uid': service_uid
+    })
+
+    server_keys = []
+    rows = cur.fetchall()
+    for row in rows:
+        server_keys.append({
+            'id': row[0],
+            'key': row[1]
+        })
+
     return render_template('manager/setting/serverkey.html', **locals())
+
+
+@blueprint.route('/manager/<service_id>/setting/_ajax/add_server', methods=['POST'])
+def manager_service_setting_ajax_add_server(service_id):
+    data = request.get_json()
+
+    key_id = data['id']
+    key = data['key']
+
+    try:
+        from Crypto.PublicKey import RSA
+
+        key = RSA.importKey(key).exportKey()
+    except ValueError:
+        return jsonify({
+            'status': 'failed',
+            'message': '지원하지 않는 키 형식이거나 키가 올바르지 않습니다.'
+        })
+
+    from .funcs import get_service_uid
+    service_uid = get_service_uid(service_id)
+    from flask import g
+    # 아이디 체크
+    cur = g.db.cursor()
+    cur.execute('SELECT * FROM `service_server_keys` WHERE `service_uid`=%(service_uid)s AND `id`=%(id)s;', {
+        'service_uid': service_uid,
+        'id': key_id
+    })
+
+    if cur.fetchone():
+        return jsonify({
+            'status': 'failed',
+            'message': '이미 존재하는 ID입니다'
+        })
+
+    import pymysql
+
+    try:
+        cur.execute('INSERT INTO `service_server_keys` (`service_uid`, `id`, `key`) ' +
+                    'VALUES (%(service_uid)s, %(id)s, %(key)s)', {
+            'service_uid': service_uid,
+            'id': key_id,
+            'key': key
+        })
+    except pymysql.MySQLError:
+        g.db.rollback()
+
+        return jsonify({
+            'status': 'failed',
+            'message': '알 수 없는 에러가 발생하였습니다. 잠시후 다시 시도해주세요.'
+        })
+
+    g.db.commit()
+
+    return jsonify({
+        'status': 'succeeded'
+    })

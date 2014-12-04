@@ -1,6 +1,9 @@
 var peacock = require('./peacock.js');
 
-peacock.init(function(err){
+var options = {
+};
+
+peacock.init(options, function(err){
   if(err) {
     console.log('error! ' + err);
     return;

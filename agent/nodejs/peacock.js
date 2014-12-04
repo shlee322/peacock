@@ -1,6 +1,7 @@
 var AUTH_URL = 'http://localhost:5000/auth';
 
-function initPeacock(cb) {
+function initPeacock(options, cb) {
+
     var request = require('request');
 
     var options = {
