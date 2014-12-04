@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html>
+<html ng-app="peacock">
   <head>
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
@@ -20,6 +20,10 @@
     {% block body %}{% endblock %}
     <script src="/static/bower_components/jquery/dist/jquery.min.js"></script>
     <script src="/static/bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="/static/bower_components/angular/angular.min.js"></script>
+    <script src="/static/bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js"></script>
+    <script src="/static/bower_components/ui-utils/ui-utils.min.js"></script>
+    <script src="/static/js/peacock.js"></script>
     {% block js %}{% endblock %}
   </body>
 </html>

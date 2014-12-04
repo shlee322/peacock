@@ -1,0 +1,4 @@
+MYSQL_DATABASE_HOST = 'localhost'
+MYSQL_DATABASE_USER = 'peacock'
+MYSQL_DATABASE_PASSWORD = 'peacock'
+MYSQL_DATABASE_DB = 'peacock'
