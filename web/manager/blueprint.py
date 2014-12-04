@@ -1,4 +1,4 @@
-from flask import Blueprint, request, render_template, jsonify
+from flask import Blueprint, request, render_template, jsonify, g
 
 blueprint = Blueprint('manager', __name__, template_folder='templates')
 
@@ -10,7 +10,8 @@ def manager_before_request():
         from flask import redirect
         return redirect('/')
 
-    # 권한 체크
+    from .funcs import get_account_services
+    g.services = get_account_services()
 
 
 @blueprint.route('/manager/')
@@ -93,3 +94,47 @@ def manager_create_ajax():
             'service_id': service_id
         }
     })
+
+
+@blueprint.route('/manager/<service_id>/')
+def manager_service_main(service_id):
+    from .funcs import get_service_name
+    service_name = get_service_name(service_id)
+    from flask import redirect
+    return redirect('/manager/%s/dashboard' % service_id)
+
+
+@blueprint.route('/manager/<service_id>/dashboard')
+def manager_service_dashboard(service_id):
+    from .funcs import get_service_name, get_menus
+    service_name = get_service_name(service_id)
+    menus = get_menus('dashboard')
+
+    return render_template('manager/setting/serverkey.html', **locals())
+
+
+@blueprint.route('/manager/<service_id>/eventviewer')
+def manager_service_eventviewer(service_id):
+    from .funcs import get_service_name, get_menus
+    service_name = get_service_name(service_id)
+    menus = get_menus('eventviewer')
+
+    return render_template('manager/setting/serverkey.html', **locals())
+
+
+@blueprint.route('/manager/<service_id>/analyzer')
+def manager_service_analyzer(service_id):
+    from .funcs import get_service_name, get_menus
+    service_name = get_service_name(service_id)
+    menus = get_menus('analyzer')
+
+    return render_template('manager/setting/serverkey.html', **locals())
+
+
+@blueprint.route('/manager/<service_id>/setting')
+def manager_service_setting(service_id):
+    from .funcs import get_service_name, get_menus
+    service_name = get_service_name(service_id)
+    menus = get_menus('setting')
+
+    return render_template('manager/setting/serverkey.html', **locals())
