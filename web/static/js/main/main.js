@@ -8,8 +8,34 @@ peacock.controller('loginController', function($scope, $http) {
     $scope.alerts = [];
 
     $scope.submit = function() {
-        $http.post('/_ajax/login', $scope.formData, function(data){
-            console.log(data);
+        $scope.alerts = [];
+
+        if(!$scope.formData.username || $scope.formData.username == '') {
+            $scope.alerts.push({
+                'type':'warning',
+                'msg': '아이디를 입력해주세요'
+            });
+            return;
+        }
+
+        if(!$scope.formData.password || $scope.formData.password == '') {
+            $scope.alerts.push({
+                'type':'warning',
+                'msg': '비밀번호를 입력해주세요'
+            });
+            return;
+        }
+
+        $http.post('/_ajax/login', $scope.formData).success(function(data){
+            if(data.status == 'failed') {
+                $scope.alerts.push({
+                    'type':'danger',
+                    'msg': data.message
+                });
+                return;
+            }
+
+            //test
         });
     }
 });
