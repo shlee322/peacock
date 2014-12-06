@@ -134,6 +134,14 @@ def manager_service_eventviewer(service_id):
     return render_template('manager/eventviewer/eventviwer.html', **locals())
 
 
+@blueprint.route('/manager/<service_id>/eventviewer/entity')
+def manager_service_eventviewer_entity(service_id):
+    entity_kind = request.args.get('kind')
+    entity_id = request.args.get('id')
+    timestamp = request.args.get('timestamp')
+    return render_template('manager/eventviewer/entity.html', **locals())
+
+
 @blueprint.route('/manager/<service_id>/analyzer')
 def manager_service_analyzer(service_id):
     from .funcs import get_service_name, get_menus
