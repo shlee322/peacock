@@ -27,6 +27,10 @@ def get_service_uid(service_id):
         'service_id': service_id
     })
     row = cur.fetchone()
+
+    if not row:
+        return None
+
     return row[0]
 
 

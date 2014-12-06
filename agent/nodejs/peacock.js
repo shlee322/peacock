@@ -1,6 +1,14 @@
 var AUTH_URL = 'http://localhost:5000/auth';
 
-var TOKEN = '';
+var TOKEN = null;
+var CIPHER = null;
+
+var crypto = require('crypto');
+var request = require('request');
+var NodeRSA = require('node-rsa');
+var msgpack = require('msgpack');
+var zmq = require('zmq');
+var sock = zmq.socket('req');
 
 function initPeacock(config, cb) {
     var fs = require('fs');
@@ -10,20 +18,26 @@ function initPeacock(config, cb) {
             throw err;
         }
 
-        var NodeRSA = require('node-rsa');
-        var key = new NodeRSA(data);
+        var rsa_key = new NodeRSA(data);
 
-        //var encrypted = key.encrypt();
+        var aes_key = crypto.randomBytes(16).toString('hex');
+        var aes_iv = crypto.randomBytes(8).toString('hex');
+        CIPHER = crypto.createCipheriv('aes-256-cbc', aes_key, aes_iv);
 
-        var request = require('request');
+        var sign = rsa_key.sign(aes_key, 'hex', 'hex');
 
         var options = {
-          uri: AUTH_URL,
-          method: 'POST',
-          json: {
-              'server_id': config.server_id,
-              'key': 'asfd',
-          }
+            uri: AUTH_URL,
+            method: 'POST',
+            json: {
+                'service_id': config.service_id,
+                'server_key_id': config.server_key_id,
+                'sign': sign,
+                'crypto': 'aes256',
+                'key': aes_key,
+                'iv': aes_iv,
+                'mode': 'cbc'
+            }
         };
 
         request(options, function (error, response, body) {
@@ -37,11 +51,28 @@ function initPeacock(config, cb) {
                 return;
             }
 
-            TOKEN = body.token;
+            if(body.status != 'succeeded') {
+                cb(body);
+                return;
+            }
 
-            cb();
+            TOKEN = body.data.token;
+
+            //이제 서버 접속
+            connect_logger(body.data.logger.zmq, cb);
         });
     });
+}
+
+function connect_logger(servers, cb) {
+    for(var i=0; i<servers.length; i++)
+        sock.connect('tcp://' + servers[i]);
+    cb();
+}
+
+function send_data(obj) {
+    var data = [TOKEN, msgpack.pack(obj)];
+    sock.send(msgpack.pack(data));
 }
 
 function Entity(kind, id) {
@@ -50,11 +81,59 @@ function Entity(kind, id) {
 }
 
 Entity.prototype.link = function(entity) {
-    console.log('link ' + this.kind + ' - ' + entity.kind);
+    var time = new Date().getTime();
+    send_data({
+        'timestamp': time,
+        'type': 'link',
+        'entity': {
+            'kind': this.kind,
+            'id': this.id
+        },
+        'target': {
+            'kind': entity.kind,
+            'id': entity.id
+        }
+    });
+    send_data({
+        'timestamp': time,
+        'type': 'link',
+        'entity': {
+            'kind': entity.kind,
+            'id': entity.id
+        },
+        'target': {
+            'kind': this.kind,
+            'id': this.id
+        }
+    });
 };
 
 Entity.prototype.unlink = function(entity) {
-    console.log('unlink ' + this.kind + ' - ' + entity.kind);
+    var time = new Date().getTime();
+    send_data({
+        'timestamp': time,
+        'type': 'unlink',
+        'entity': {
+            'kind': this.kind,
+            'id': this.id
+        },
+        'target': {
+            'kind': entity.kind,
+            'id': entity.id
+        }
+    });
+    send_data({
+        'timestamp': time,
+        'type': 'unlink',
+        'entity': {
+            'kind': entity.kind,
+            'id': entity.id
+        },
+        'target': {
+            'kind': this.kind,
+            'id': this.id
+        }
+    });
 };
 
 Entity.prototype.event = function (name, data, date, date2) {
@@ -62,8 +141,21 @@ Entity.prototype.event = function (name, data, date, date2) {
         date = new Date();
     }
 
-    console.log('event' + this.kind + ' ' + name);
-    console.log(TOKEN);
+    var send_obj = {
+        'timestamp': date.getTime(),
+        'type': 'event',
+        'entity': {
+            'kind': this.kind,
+            'id': this.id
+        },
+        'data': data
+    };
+
+    if(date2) {
+        send_obj['timestamp_length'] = date2.getTime() - date.getTime();
+    }
+
+    send_data(send_obj);
 };
 
 var seq = 0;
