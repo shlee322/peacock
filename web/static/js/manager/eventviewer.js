@@ -4,8 +4,12 @@ peacock.config(function(WebSocketProvider){
       .uri("ws://localhost:7000/" + service_id);
   });
 
-peacock.controller('eventViewerController', function($scope, $filter, WebSocket) {
+peacock.controller('eventViewerController', function($scope, $filter, $modal, WebSocket) {
     $scope.formData = {};
+
+    $scope.view_entity = function (kind, id, timestamp) {
+        openEntityModal($modal, kind, id, timestamp);
+    };
 
     var now_date = new Date().getTime();
     $scope.formData.date = $filter('date')(now_date, 'yyyy-MM-dd');

@@ -1,6 +1,7 @@
 {% extends "manager/body.html" %}
 {% block js %}
 {{ super() }}
+{% include "manager/eventviewer/entity.html" %}
 <script src="/static/js/manager/eventviewer.js"></script>
 {% endblock %}
 {% block content %}
@@ -37,7 +38,7 @@
                     {% raw %}
                     <td>{{ item.timestamp | date:'HH:mm:ss.sss' }}</td>
                     <td>{{ item.timestamp_length }}ms</td>
-                    <td><a target="_blank" href="/manager/{% endraw %}{{ service_id }}{% raw %}/eventviewer/entity?kind={{ item.entity.kind }}&id={{ item.entity.id }}&timestamp={{ item.timestamp }}">{{ item.entity.kind }} ({{ item.entity.id }})</a></td>
+                    <td><a ng-click="view_entity(item.entity.kind,item.entity.id,item.timestamp)">{{ item.entity.kind }} ({{ item.entity.id }})</a></td>
                     <td>{{ item.event_name }}</td>
                     <td>{{ item.data }}</td>
                     {% endraw %}

@@ -1,11 +1,38 @@
-{% extends "layout.html" %}
-{% block css %}
-{% endblock %}
-{% block js %}
-{% endblock %}
-{% block body %}
-    <div class="container">
-        <h1>Entity - {{ entity_kind }} ({{ entity_id }})</h1>
-        test
+{% raw %}
+<script type="text/ng-template" id="entityModalContent.html">
+    <div class="modal-header">
+        <h3 class="modal-title">I'm a modal!</h3>
     </div>
-{% endblock %}
+    <div class="modal-body">
+    </div>
+    <div class="modal-footer">
+        <button class="btn btn-primary" ng-click="ok()">OK</button>
+        <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+    </div>
+</script>
+<script type="application/javascript">
+    peacock.controller('entityModalController', function ($scope, $modalInstance, kind, id, timestamp) {
+    /*
+      $scope.items = items;
+      $scope.ok = function () {
+        $modalInstance.close();
+      };
+
+      $scope.cancel = function () {
+        $modalInstance.dismiss('cancel');
+      };*/
+    });
+
+    function openEntityModal($modal, kind, id, timestamp) {
+        var modalInstance = $modal.open({
+            templateUrl: 'entityModalContent.html',
+            controller: 'entityModalController',
+            resolve: {
+                kind:function() { return kind; },
+                id:function() { return id; },
+                timestamp:function() { return timestamp; }
+            }
+        });
+    }
+</script>
+{% endraw %}
