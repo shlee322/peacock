@@ -1,32 +1,49 @@
 {% raw %}
 <script type="text/ng-template" id="entityModalContent.html">
     <div class="modal-header">
-        <h3 class="modal-title">I'm a modal!</h3>
+        <h3 class="modal-title">{{ entity_kind  }} - {{ entity_id }}</h3>
     </div>
     <div class="modal-body">
-    </div>
-    <div class="modal-footer">
-        <button class="btn btn-primary" ng-click="ok()">OK</button>
-        <button class="btn btn-warning" ng-click="cancel()">Cancel</button>
+        <form class="form-inline" role="form">
+            <div class="form-group">
+                <input type="date" class="form-control" id="date" ng-model="formData.start_date" readonly>
+            </div>
+            <div class="form-group">
+                <input type="time" class="form-control" id="time" ng-model="formData.start_time" readonly>
+            </div>
+            <div class="form-group">
+                ~
+            </div>
+            <div class="form-group">
+                <input type="date" class="form-control" id="date" ng-model="formData.end_date" readonly>
+            </div>
+            <div class="form-group">
+                <input type="time" class="form-control" id="time" ng-model="formData.end_time" readonly>
+            </div>
+        </form>
+        dasfsfdsfadsf
+        sdfasdfasdf
+        dasffds
     </div>
 </script>
-<script type="application/javascript">
-    peacock.controller('entityModalController', function ($scope, $modalInstance, kind, id, timestamp) {
-    /*
-      $scope.items = items;
-      $scope.ok = function () {
-        $modalInstance.close();
-      };
 
-      $scope.cancel = function () {
-        $modalInstance.dismiss('cancel');
-      };*/
+<script type="application/javascript">
+    peacock.controller('entityModalController', function ($scope, $modalInstance, $filter, kind, id, timestamp) {
+        $scope.entity_kind = kind;
+        $scope.entity_id = id;
+
+        $scope.formData = {};
+        $scope.formData.start_date = $filter('date')(timestamp - 10000, 'yyyy-MM-dd');
+        $scope.formData.start_time = $filter('date')(timestamp - 10000, 'HH:mm:ss');
+        $scope.formData.end_date = $filter('date')(timestamp, 'yyyy-MM-dd');
+        $scope.formData.end_time = $filter('date')(timestamp, 'HH:mm:ss');
     });
 
     function openEntityModal($modal, kind, id, timestamp) {
         var modalInstance = $modal.open({
             templateUrl: 'entityModalContent.html',
             controller: 'entityModalController',
+            size:'lg',
             resolve: {
                 kind:function() { return kind; },
                 id:function() { return id; },
