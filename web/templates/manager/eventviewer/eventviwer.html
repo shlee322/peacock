@@ -35,7 +35,7 @@
             <tbody>
                 {% raw %}
                 <tr ng-repeat="item in event_list">
-                    <td>{{ item.timestamp }}</td>
+                    <td>{{ item.timestamp | date:'HH:mm:ss.sss' }}</td>
                     <td>{{ item.timestamp_length }}ms</td>
                     <td>{{ item.entity.kind }} ({{ item.entity.id }})</td>
                     <td>{{ item.event_name }}</td>
