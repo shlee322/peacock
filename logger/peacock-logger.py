@@ -1,10 +1,13 @@
 import asyncio
 import aiozmq
 import msgpack
+import asynqp
 
 log_db = None
 now_time = 0
 seq = 0
+messagequeue_exchange = None
+
 
 class LoggerZmqProtocol(aiozmq.ZmqProtocol):
     transport = None
@@ -43,13 +46,21 @@ class LoggerZmqProtocol(aiozmq.ZmqProtocol):
         log_key = '%s_%s_%s' % (log_time, '1', seq)
         log_db.insert(log_key, log_data)
 
-        # Job
+        messagequeue_exchange.publish(asynqp.Message({'log_id': log_key}), 'peacock_job_1')
 
         return log_key.encode('utf8')
 
 
 @asyncio.coroutine
 def init_logger():
+    messagequeue_conn = yield from asynqp.connect('localhost', 5672, username='guest', password='guest')
+    messagequeue_channel = yield from messagequeue_conn.open_channel()
+
+    global messagequeue_exchange
+    messagequeue_exchange = yield from messagequeue_channel.declare_exchange('peacock_job.exchange', 'direct')
+    queue = yield from messagequeue_channel.declare_queue('peacock_job_1')
+    yield from queue.bind(messagequeue_exchange, 'peacock_job_1')
+
     import zmq
     router, temp = yield from aiozmq.create_zmq_connection(
         lambda: LoggerZmqProtocol(), zmq.REP,

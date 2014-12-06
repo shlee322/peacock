@@ -25,7 +25,7 @@ def handler(websocket, path):
                 descending=True,
                 mapkey_range=[
                     [service_id, timestamp],
-                    [service_id, 0]
+                    [service_id, data.get('start_timestamp', 0)]
                 ],
                 limit=20
             )
