@@ -1,20 +1,49 @@
 {% extends "manager/body.html" %}
+{% block js %}
+{{ super() }}
+<script src="/static/js/manager/eventviewer.js"></script>
+{% endblock %}
 {% block content %}
-<div class="container-fluid">
-  <div class="row">
-    <div class="col-sm-3 col-md-2 sidebar">
-      <ul class="nav nav-sidebar">
-        <li class="active"><a href="#">Server Keys <span class="sr-only">(current)</span></a></li>
-        <li><a href="#">Members</a></li>
-      </ul>
-    </div>
+<div class="container" ng-controller="eventViewerController">
+    <h1 class="page-header">Event Viewer</h1>
+    <form class="form-inline" role="form">
+        <div class="form-group">
+            <input type="date" class="form-control" id="date" ng-model="formData.date" readonly>
+        </div>
+        <div class="form-group">
+            <input type="time" class="form-control" id="time" ng-model="formData.time" readonly>
+        </div>
+        <div class="form-group">
+            <div class="btn-group" role="group">
+                <button type="button" class="btn btn-default" ng-click="time_previous()"><span class="glyphicon glyphicon-backward" aria-hidden="true"></span></button>
+                <button type="button" class="btn btn-default" ng-click="time_next()"><span class="glyphicon glyphicon-forward" aria-hidden="true"></span></button>
+            </div>
+        </div>
 
-    <div class="col-sm-9 col-sm-offset-3 col-md-10 col-md-offset-2 main">
-      <h1 class="page-header">Server Key</h1>
-        dasfafsfsfds
-        <h2 class="sub-header">Authentication Token</h2>
-        testtest
+    </form>
+    <div class="table-responsive" style="overflow: scroll; height: 500px;">
+        <table class="table table-hover">
+            <thead>
+                <tr>
+                    <th width="120px">Time</th>
+                    <th width="80px">Lenght</th>
+                    <th width="100px">Entity</th>
+                    <th width="100px">Event</th>
+                    <th width="*">Data</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% raw %}
+                <tr ng-repeat="item in event_list">
+                    <td>{{ item.timestamp }}</td>
+                    <td>{{ item.timestamp_length }}ms</td>
+                    <td>{{ item.entity.kind }} ({{ item.entity.id }})</td>
+                    <td>{{ item.event_name }}</td>
+                    <td>{{ item.data }}</td>
+                </tr>
+                {% endraw %}
+            </tbody>
+        </table>
     </div>
-  </div>
 </div>
 {% endblock %}

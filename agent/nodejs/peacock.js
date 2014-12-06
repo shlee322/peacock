@@ -148,6 +148,7 @@ Entity.prototype.event = function (name, data, date, date2) {
             'kind': this.kind,
             'id': this.id
         },
+        'event_name': name,
         'data': data
     };
 
@@ -164,7 +165,7 @@ function createPeacockHttpProxy(server_id, requestListener) {
     var server_entity = new Entity('server', server_id);
     var request_path_kind = 'request_path';
     var request_entity_kind = 'request';
-    var response_entity_kind = 'request';
+    var response_entity_kind = 'response';
 
     var originalRequestListener = requestListener;
 

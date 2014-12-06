@@ -2,6 +2,9 @@ import asyncio
 import aiozmq
 import msgpack
 
+log_db = None
+now_time = 0
+seq = 0
 
 class LoggerZmqProtocol(aiozmq.ZmqProtocol):
     transport = None
@@ -24,10 +27,25 @@ class LoggerZmqProtocol(aiozmq.ZmqProtocol):
 
     def task_log(self, data):
         data = msgpack.unpackb(data)
-        token = data[0]
-        data = msgpack.unpackb(data[1])
-        print(data)
-        return '0'.encode('utf8')
+
+        log_data = msgpack.unpackb(data[1], encoding='utf-8')
+        log_data['service'] = {
+            'id': data[0].decode('utf8')
+        }
+
+        import time
+        global now_time, seq
+        log_time = int(time.time() * 1000)
+        if now_time != log_time:
+            now_time = log_time
+            seq = 0
+        seq += 1
+        log_key = '%s_%s_%s' % (log_time, '1', seq)
+        log_db.insert(log_key, log_data)
+
+        # Job
+
+        return log_key.encode('utf8')
 
 
 @asyncio.coroutine
@@ -39,6 +57,9 @@ def init_logger():
 
 
 if __name__ == '__main__':
+    from couchbase.bucket import Bucket as CouchbaseBucket
+    log_db = CouchbaseBucket('couchbase://localhost/events')
+
     loop = asyncio.get_event_loop()
     asyncio.async(init_logger(), loop=loop)
     loop.run_forever()
