@@ -54,6 +54,11 @@ def handler(websocket, path):
                 'method': 'get_event_list',
                 'results': result_data
             }))
+        elif method == "get_entity_timeline":
+            yield from websocket.send(json.dumps({
+                'method': 'get_entity_timeline',
+                'results': []
+            }))
 
 
 if __name__ == '__main__':

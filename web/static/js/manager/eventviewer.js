@@ -1,9 +1,3 @@
-peacock.config(function(WebSocketProvider){
-    WebSocketProvider
-      .prefix('')
-      .uri("ws://localhost:7000/" + service_id);
-  });
-
 peacock.controller('eventViewerController', function($scope, $filter, $modal, WebSocket) {
     $scope.formData = {};
 

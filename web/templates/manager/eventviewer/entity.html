@@ -71,7 +71,13 @@
 </script>
 
 <script type="application/javascript">
-    peacock.controller('entityModalController', function ($scope, $modalInstance, $filter, kind, id, timestamp) {
+    peacock.config(function(WebSocketProvider){
+        WebSocketProvider
+          .prefix('')
+          .uri("ws://localhost:7000/" + service_id);
+    });
+
+    peacock.controller('entityModalController', function ($scope, $modalInstance, $filter, WebSocket, kind, id, timestamp) {
         $scope.entity_kind = kind;
         $scope.entity_id = id;
 
@@ -80,6 +86,16 @@
         $scope.formData.start_time = $filter('date')(timestamp - 10000, 'HH:mm:ss');
         $scope.formData.end_date = $filter('date')(timestamp, 'yyyy-MM-dd');
         $scope.formData.end_time = $filter('date')(timestamp, 'HH:mm:ss');
+
+        WebSocket.send(JSON.stringify({
+            'method': 'get_entity_timeline',
+            'entity': {
+                'kind': kind,
+                'id': id
+            },
+            'timestamp': timestamp,
+            'timestamp_length': timestamp - 10000
+        }));
     });
 
     function openEntityModal($modal, kind, id, timestamp) {
