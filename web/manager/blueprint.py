@@ -134,6 +134,101 @@ def manager_service_eventviewer(service_id):
     return render_template('manager/eventviewer/eventviwer.html', **locals())
 
 
+@blueprint.route('/manager/<service_id>/eventviewer/_ajax/get_event_list')
+def manager_service_eventviwer_get_event_list(service_id):
+    import json
+    from couchbase.bucket import Bucket as CouchbaseBucket
+    from couchbase.views.iterator import View, Query
+
+    log_db = CouchbaseBucket('couchbase://localhost/events')
+
+    timestamp = int(request.args['timestamp'])
+
+    q = Query(
+        descending=True,
+        mapkey_range=[
+            [service_id, timestamp],
+            [service_id, int(request.args.get('start_timestamp', 0))]
+        ],
+        limit=20
+    )
+
+    view = View(log_db, "events", "eventviewer", query=q)
+
+    result_data = []
+    for result in view:
+        result_obj = {
+            'timestamp': result.value['timestamp'],
+            'entity': result.value['entity'],
+            'event_name': result.value.get('event_name')
+        }
+
+        if result.value.get('timestamp_length'):
+            result_obj['timestamp_length'] = result.value.get('timestamp_length')
+        else:
+            result_obj['timestamp_length'] = 0
+
+        if result.value.get('data'):
+            result_obj['data'] = json.dumps(result.value.get('data'))[:100]
+
+        result_data.insert(0, result_obj)
+
+    return jsonify({
+        'status': 'succeeded',
+        'data': result_data
+    })
+
+
+
+@blueprint.route('/manager/<service_id>/eventviewer/_ajax/get_entity_timeline')
+def manager_service_eventviwer_get_entity_timeline(service_id):
+    entity_kind = request.args['kind']
+    entity_id = request.args['id']
+
+    start_timestamp = int(request.args['start_timestamp'])
+    end_timestamp = int(request.args['end_timestamp'])
+
+    from couchbase.bucket import Bucket as CouchbaseBucket
+    from couchbase.views.iterator import View, Query
+
+    log_db = CouchbaseBucket('couchbase://localhost/events')
+
+    q = Query(
+        mapkey_range=[
+            [service_id, entity_kind, entity_id, start_timestamp, ],
+            [service_id, entity_kind, entity_id, end_timestamp, Query.STRING_RANGE_END]
+        ],
+        limit=200
+    )
+
+    view = View(log_db, "events", "entity_timeline", query=q)
+
+    result_data = []
+    for result in view:
+        result_obj = {
+            'id': result.docid,
+            'type': result.value['type'],
+            'timestamp': result.value['timestamp']
+        }
+        if result.value.get('timestamp_length'):
+            result_obj['timestamp_length'] = result.value.get('timestamp_length')
+        elif result_obj['type'] == 'event':
+            result_obj['timestamp_length'] = 0
+
+        if result.value.get('target'):
+            result_obj['target'] = result.value.get('target')
+
+        if result.value.get('event_name'):
+            result_obj['event_name'] = result.value.get('event_name')
+
+        result_data.append(result_obj)
+
+    return jsonify({
+        'status': 'succeeded',
+        'data': result_data
+    })
+
+
 @blueprint.route('/manager/<service_id>/analyzer')
 def manager_service_analyzer(service_id):
     from .funcs import get_service_name, get_menus

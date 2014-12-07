@@ -29,38 +29,16 @@
                 </tr>
             </thead>
             <tbody>
-                <tr>
-                    <td>test.asdf</td>
+                <tr ng-repeat="item in timeline | filter:{ type: '!unlink'}">
+                    <td ng-if="item.type == 'link'">{{ item.target.kind }}</td>
+                    <td ng-if="item.type == 'event'">{{ entity_kind }}.{{ item.event_name }}</td>
                     <td>
+                        {{ item.timestamp | date:'HH:mm:ss.sss' }} -> {{ item.timestamp+item.timestamp_length | date:'HH:mm:ss.sss' }} {{ item.timestamp_length }}ms
                         <div class="progress">
-                            <div class="progress-bar" style="margin-top: 35%; width: 35%">
+                            <div class="progress-bar" style="margin-top: {{ (item.timestamp - start_timestamp) / (end_timestamp - start_timestamp) * 100  | ceil}}%; width: {{ (item.timestamp - start_timestamp) / (end_timestamp - start_timestamp) * 100 | ceil}}%">
                             </div>
-                            <div class="progress-bar progress-bar-striped" style="width: 20%">
-                                3ms
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>test.asdf</td>
-                    <td>
-                        <div class="progress">
-                            <div class="progress-bar" style="margin-top: 50%; width: 50%">
-                            </div>
-                            <div class="progress-bar progress-bar-striped" style="width: 20%">
-                                3ms
-                            </div>
-                        </div>
-                    </td>
-                </tr>
-                <tr>
-                    <td>test.asdf</td>
-                    <td>
-                        <div class="progress">
-                            <div class="progress-bar" style="margin-top: 70%; width: 70%">
-                            </div>
-                            <div class="progress-bar progress-bar-striped" style="width: 30%">
-                                3ms
+                            <div class="progress-bar progress-bar-striped" style="width: {{ item.timestamp_length+1 / (end_timestamp - start_timestamp) * 100  | ceil}}%">
+                                {{ item.timestamp_length }}ms
                             </div>
                         </div>
                     </td>
@@ -71,31 +49,79 @@
 </script>
 
 <script type="application/javascript">
+    /*
     peacock.config(function(WebSocketProvider){
         WebSocketProvider
           .prefix('')
           .uri("ws://localhost:7000/" + service_id);
+    });*/
+    peacock.filter('ceil', function() {
+      return function(input) {
+        return Math.ceil(input);
+      };
     });
-
-    peacock.controller('entityModalController', function ($scope, $modalInstance, $filter, WebSocket, kind, id, timestamp) {
+    peacock.controller('entityModalController', function ($scope, $modalInstance, $filter, $http, kind, id, timestamp) {
         $scope.entity_kind = kind;
         $scope.entity_id = id;
 
-        $scope.formData = {};
-        $scope.formData.start_date = $filter('date')(timestamp - 10000, 'yyyy-MM-dd');
-        $scope.formData.start_time = $filter('date')(timestamp - 10000, 'HH:mm:ss');
-        $scope.formData.end_date = $filter('date')(timestamp, 'yyyy-MM-dd');
-        $scope.formData.end_time = $filter('date')(timestamp, 'HH:mm:ss');
 
-        WebSocket.send(JSON.stringify({
-            'method': 'get_entity_timeline',
-            'entity': {
-                'kind': kind,
-                'id': id
-            },
-            'timestamp': timestamp,
-            'timestamp_length': timestamp - 10000
-        }));
+        timestamp += 500;
+        var start_timestamp = timestamp - 1000;
+        var end_timestamp = timestamp;
+        $scope.start_timestamp = start_timestamp;
+        $scope.end_timestamp = end_timestamp;
+
+        $scope.formData = {};
+        $scope.formData.start_date = $filter('date')(start_timestamp, 'yyyy-MM-dd');
+        $scope.formData.start_time = $filter('date')(start_timestamp, 'HH:mm:ss');
+        $scope.formData.end_date = $filter('date')(end_timestamp, 'yyyy-MM-dd');
+        $scope.formData.end_time = $filter('date')(end_timestamp, 'HH:mm:ss');
+
+
+        $http.get('/manager/' + service_id + '/eventviewer/_ajax/get_entity_timeline?kind=' + kind + '&id=' + id +
+            '&start_timestamp=' +start_timestamp + '&end_timestamp='+ end_timestamp)
+            .success(function (data){
+                    var timeline = data.data;
+
+                    var link_data = {};
+                    var add_link = [];
+                    for(var i=0; i<timeline.length; i++) {
+                        if(timeline[i].type == 'link') {
+                            var target = timeline[i].target.kind + '_' + timeline[i].target.id;
+                            link_data[target] = timeline[i];
+                        } else if(timeline[i].type == 'unlink') {
+                            var target = timeline[i].target.kind + '_' + timeline[i].target.id;
+                            var target_obj = link_data[target];
+                            if(!target_obj) {
+                                target_obj = {
+                                    'type': 'link',
+                                    'timestamp': start_timestamp,
+                                    'target': {
+                                        'kind': timeline[i].target.kind,
+                                        'id': timeline[i].target.id
+                                    }
+                                };
+                                link_data[target] = target_obj;
+                                add_link.push(target_obj);
+                            }
+
+                            target_obj.timestamp_length = timeline[i].timestamp - target_obj.timestamp;
+                        }
+                    }
+
+                    for(var key in link_data) {
+                        if(link_data[key].timestamp_length === undefined) {
+                            link_data[key].timestamp_length = end_timestamp - link_data[key].timestamp;
+                        }
+                    }
+
+                    for(var i=0; i<add_link.length; i++) {
+                        timeline.unshift(add_link[i]);
+                    }
+
+                    console.log(timeline);
+                    $scope.timeline = timeline;
+        });
     });
 
     function openEntityModal($modal, kind, id, timestamp) {

@@ -1,4 +1,4 @@
-peacock.controller('eventViewerController', function($scope, $filter, $modal, WebSocket) {
+peacock.controller('eventViewerController', function($scope, $filter, $modal, $http) {
     $scope.formData = {};
 
     $scope.view_entity = function (kind, id, timestamp) {
@@ -24,21 +24,11 @@ peacock.controller('eventViewerController', function($scope, $filter, $modal, We
     };
 
     $scope.load_log = function () {
-        WebSocket.send(JSON.stringify({
-            'method': 'get_event_list',
-            'timestamp': now_date
-        }));
+        $http.get('/manager/' + service_id + '/eventviewer/_ajax/get_event_list?timestamp='+now_date)
+            .success(function (data){
+                $scope.event_list = data.data;
+        });
     };
 
-    WebSocket.onopen(function()
-    {
-        $scope.load_log();
-    });
-
-    WebSocket.onmessage(function (evt)
-    {
-        var received_msg = evt.data;
-        var data = JSON.parse(received_msg);
-        if(data.results.length > 0) $scope.event_list = data.results;
-    });
+    $scope.load_log();
 });

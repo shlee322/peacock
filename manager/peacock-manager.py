@@ -15,50 +15,6 @@ def handler(websocket, path):
 
         data = json.loads(message)
 
-        method = data['method']
-        if method == 'get_event_list':
-            timestamp = data['timestamp']
-
-            from couchbase.views.iterator import View, Query
-
-            q = Query(
-                descending=True,
-                mapkey_range=[
-                    [service_id, timestamp],
-                    [service_id, data.get('start_timestamp', 0)]
-                ],
-                limit=20
-            )
-
-            view = View(log_db, "events", "eventviewer", query=q)
-
-            result_data = []
-            for result in view:
-                result_obj = {
-                    'timestamp': result.value['timestamp'],
-                    'entity': result.value['entity'],
-                    'event_name': result.value.get('event_name')
-                }
-
-                if result.value.get('timestamp_length'):
-                    result_obj['timestamp_length'] = result.value.get('timestamp_length')
-                else:
-                    result_obj['timestamp_length'] = 0
-
-                if result.value.get('data'):
-                    result_obj['data'] = json.dumps(result.value.get('data'))[:100]
-
-                result_data.insert(0, result_obj)
-
-            yield from websocket.send(json.dumps({
-                'method': 'get_event_list',
-                'results': result_data
-            }))
-        elif method == "get_entity_timeline":
-            yield from websocket.send(json.dumps({
-                'method': 'get_entity_timeline',
-                'results': []
-            }))
 
 
 if __name__ == '__main__':
