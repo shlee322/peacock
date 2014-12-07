@@ -121,7 +121,7 @@ def manager_service_dashboard(service_id):
     service_name = get_service_name(service_id)
     menus = get_menus('dashboard')
 
-    return render_template('manager/eventviewer/eventviwer.html', **locals())
+    return render_template('manager/dashboard/dashboard.html', **locals())
 
 
 @blueprint.route('/manager/<service_id>/eventviewer')
@@ -236,8 +236,7 @@ def manager_service_analyzer(service_id):
     service_name = get_service_name(service_id)
     menus = get_menus('analyzer')
 
-    return render_template('manager/eventviewer/eventviwer.html', **locals())
-
+    return render_template('manager/analyzer/analyzer.html', **locals())
 
 @blueprint.route('/manager/<service_id>/setting')
 def manager_service_setting(service_id):
