@@ -63,15 +63,41 @@
                       <div class="panel-heading" ng-if="item.type == 'event'"><span class="label label-success">event</span> `{{ item.kind }}`.`{{ item.id }}` Filter</div>
                       <div class="panel-heading" ng-if="item.type == 'analyzer'"><span class="label label-primary">analyzer</span> `{{ item.name }}` Filter</div>
                       <div class="panel-body">
-                          sadffsda
+                          <textarea class="form-control" rows="3"></textarea>
                       </div>
                     </div>
                 </div>
             </div>
         </div>
-          입력별 필터,
-          그룹
+        <hr>
+        <h4>Group  <small>Input 된 데이터를 그룹핑합니다.</small> <button class="btn btn-default btn-sm" ng-click="isGroupView = !isGroupView">view</button></h4>
+        <div collapse="isGroupView">
+            <div class="panel panel-default">
+                <div class="panel-body">
+                    <form class="form-inline" role="form">
+                        <select class="form-control">
+                        <option>없음</option>
+                        <option>초</option>
+                        <option>분</option>
+                        <option>시</option>
+                        <option>일</option>
+                        <option>주</option>
+                        <option>월</option>
+                        </select>
 
+                        <div class="form-group">
+                            <div class="input-group">
+                                <div class="input-group-addon">Entity</div>
+                                <input type="text" class="form-control input-sm" placeholder="Entity Kind">
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+        <hr>
+        <h4>Processor <small>실질적인 작업~~~~</small></h4>
+        <textarea class="form-control" rows="3"></textarea>
       </div>
     </div>
   </div>

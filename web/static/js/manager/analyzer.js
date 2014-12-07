@@ -4,6 +4,7 @@ peacock.controller('addAnalyzerController', function($scope, $filter, $modal, $h
     $scope.isAddEditView = true;
     $scope.addInputEvent = {};
     $scope.addInputAnalyzer = {};
+    $scope.isGroupView = true;
 
     $scope.addInputEvent.submit = function() {
         $scope.inputList.push({
