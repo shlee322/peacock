@@ -2,6 +2,9 @@ import asyncio
 import aiozmq
 import msgpack
 import asynqp
+import zmq
+from kazoo.client import KazooClient
+
 
 log_db = None
 now_time = 0
@@ -68,13 +71,11 @@ def init_logger():
     messagequeue_exchange = yield from messagequeue_channel.declare_exchange('peacock_job.exchange', 'direct')
 
     from config import ZOOKEEPER_HOST, BIND_ADDRESS
-    import zmq
     yield from aiozmq.create_zmq_connection(
         lambda: LoggerZmqProtocol(), zmq.REP,
         bind='tcp://%s' % BIND_ADDRESS)
 
     # 주키퍼에 등록
-    from kazoo.client import KazooClient
     zk = KazooClient(hosts=ZOOKEEPER_HOST)
     zk.start()
     zk.create("/peacock/logger/zmq/node", BIND_ADDRESS.encode('utf8'), ephemeral=True, sequence=True, makepath=True)
