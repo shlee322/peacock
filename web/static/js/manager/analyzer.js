@@ -38,7 +38,17 @@ peacock.controller('addAnalyzerController', function($scope, $filter, $modal, $h
             },
             'processor_script': $scope.addAnalyzer.processor_script
         };
-        console.log(data);
-        console.log($scope);
+
+        $http.post('/manager/' + service_id + '/analyzer/_ajax/add_analyzer', data).success(function(data){
+            if(data.status == 'failed') {
+                $scope.alerts.push({
+                    'type':'danger',
+                    'msg': data.message
+                });
+                return;
+            }
+
+            document.location = '/manager/' + service_id + '/analyzer';
+        });
     };
 });

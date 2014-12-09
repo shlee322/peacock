@@ -238,6 +238,21 @@ def manager_service_analyzer(service_id):
 
     return render_template('manager/analyzer/analyzer.html', **locals())
 
+
+@blueprint.route('/manager/<service_id>/analyzer/_ajax/add_analyzer', methods=['POST'])
+def manager_analyzer_ajax_add_analyzer(service_id):
+    data = request.get_json()
+
+    if data['group']['entity_kind'] == '':
+        data['group']['entity_kind'] = None
+
+    print(data)
+    return jsonify({
+        'status': 'failed',
+        'message': 'test'
+    })
+
+
 @blueprint.route('/manager/<service_id>/setting')
 def manager_service_setting(service_id):
     from .funcs import get_service_name, get_menus

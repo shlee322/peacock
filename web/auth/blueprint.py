@@ -43,14 +43,24 @@ def main_auth():
     import hashlib
     print(public_key.verify(hashlib.sha256(key).digest(), sign))
 
+    nodes = []
+
+    from config import ZOOKEEPER_HOST
+    from kazoo.client import KazooClient
+    zk = KazooClient(hosts=ZOOKEEPER_HOST)
+    zk.start()
+    children = zk.get_children("/peacock/logger/zmq")
+    for node in children:
+        data, stat = zk.get("/peacock/logger/zmq/%s" % node)
+        nodes.append(data.decode('utf8'))
+    zk.stop()
+
     return jsonify({
         'status': 'succeeded',
         'data': {
             'token': 'kr-elab-test',
             'logger': {
-                'zmq': [
-                    '127.0.0.1:6000'
-                ]
+                'zmq': nodes
             }
         }
     })

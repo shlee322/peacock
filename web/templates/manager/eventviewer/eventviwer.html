@@ -7,20 +7,6 @@
 {% block content %}
 <div class="container" ng-controller="eventViewerController">
     <h1 class="page-header">Event Viewer</h1>
-    <form class="form-inline" role="form">
-        <div class="form-group">
-            <input type="date" class="form-control" id="date" ng-model="formData.date" readonly>
-        </div>
-        <div class="form-group">
-            <input type="time" class="form-control" id="time" ng-model="formData.time" readonly>
-        </div>
-        <div class="form-group">
-            <div class="btn-group" role="group">
-                <button type="button" class="btn btn-default" ng-click="time_previous()"><span class="glyphicon glyphicon-backward" aria-hidden="true"></span></button>
-                <button type="button" class="btn btn-default" ng-click="time_next()"><span class="glyphicon glyphicon-forward" aria-hidden="true"></span></button>
-            </div>
-        </div>
-    </form>
     <div class="table-responsive" style="overflow: scroll; height: 500px;">
         <table class="table table-hover">
             <thead>
@@ -33,6 +19,11 @@
                 </tr>
             </thead>
             <tbody>
+                <tr ng-if="event_list.length > 0">
+                    <td colspan=5 style="background-color: #f9f9f9"  class="text-center">
+                        <a ng-click="load_log(event_list[0].timestamp, 0)">더 보기</a>
+                    </td>
+                </tr>
                 <tr ng-repeat="item in event_list">
                     {% raw %}
                     <td>{{ item.timestamp | date:'HH:mm:ss.sss' }}</td>
