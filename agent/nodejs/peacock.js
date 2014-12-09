@@ -94,18 +94,6 @@ Entity.prototype.link = function(entity) {
             'id': entity.id
         }
     });
-    send_data({
-        'timestamp': time,
-        'type': 'link',
-        'entity': {
-            'kind': entity.kind,
-            'id': entity.id
-        },
-        'target': {
-            'kind': this.kind,
-            'id': this.id
-        }
-    });
 };
 
 Entity.prototype.unlink = function(entity) {
@@ -120,18 +108,6 @@ Entity.prototype.unlink = function(entity) {
         'target': {
             'kind': entity.kind,
             'id': entity.id
-        }
-    });
-    send_data({
-        'timestamp': time,
-        'type': 'unlink',
-        'entity': {
-            'kind': entity.kind,
-            'id': entity.id
-        },
-        'target': {
-            'kind': this.kind,
-            'id': this.id
         }
     });
 };

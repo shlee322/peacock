@@ -28,27 +28,35 @@ class LoggerZmqProtocol(aiozmq.ZmqProtocol):
         import logging
         logging.exception(exc)
 
+    def publish_mq(self, obj):
+        import hashlib
+        import struct
+        log_key = "%s_%s" % (obj['entity']['kind'], obj['entity']['id'])
+        log_key = struct.unpack('>I', hashlib.md5(log_key.encode('utf8')).digest()[0:4])
+        log_key = log_key[0] % 8192
+
+        messagequeue_exchange.publish(asynqp.Message(msgpack.packb(obj)), 'peacock_job_%d' % log_key)
+
     def task_log(self, data):
-        data = msgpack.unpackb(data)
+        try:
+            data = msgpack.unpackb(data)
 
-        log_data = msgpack.unpackb(data[1], encoding='utf-8')
-        log_data['service'] = {
-            'id': data[0].decode('utf8')
-        }
+            log_data = msgpack.unpackb(data[1], encoding='utf-8')
 
-        import time
-        global now_time, seq
-        log_time = int(time.time() * 1000)
-        if now_time != log_time:
-            now_time = log_time
-            seq = 0
-        seq += 1
-        log_key = '%s_%s_%s' % (log_time, '1', seq)
-        log_db.insert(log_key, log_data)
+            log_data['service'] = {
+                'id': data[0].decode('utf8')
+            }
 
-        messagequeue_exchange.publish(asynqp.Message({'log_id': log_key}), 'peacock_job_1')
+            self.publish_mq(log_data)
+            if log_data['type'] == 'link' or log_data['type'] == 'unlink':
+                temp = log_data['entity']
+                log_data['entity'] = log_data['target']
+                log_data['target'] = temp
+                self.publish_mq(log_data)
+        except:
+            return 'fail'.encode('utf8')
 
-        return log_key.encode('utf8')
+        return 'ok'.encode('utf8')
 
 
 @asyncio.coroutine
@@ -58,19 +66,14 @@ def init_logger():
 
     global messagequeue_exchange
     messagequeue_exchange = yield from messagequeue_channel.declare_exchange('peacock_job.exchange', 'direct')
-    queue = yield from messagequeue_channel.declare_queue('peacock_job_1')
-    yield from queue.bind(messagequeue_exchange, 'peacock_job_1')
 
     import zmq
-    router, temp = yield from aiozmq.create_zmq_connection(
+    yield from aiozmq.create_zmq_connection(
         lambda: LoggerZmqProtocol(), zmq.REP,
         bind='tcp://0.0.0.0:6000')
 
 
 if __name__ == '__main__':
-    from couchbase.bucket import Bucket as CouchbaseBucket
-    log_db = CouchbaseBucket('couchbase://localhost/events')
-
     loop = asyncio.get_event_loop()
     asyncio.async(init_logger(), loop=loop)
     loop.run_forever()
