@@ -7,9 +7,21 @@ from kazoo.client import KazooClient
 
 
 log_db = None
+node_id = ''
 now_time = 0
 seq = 0
 messagequeue_exchange = None
+
+
+def get_log_key():
+    import time
+    global now_time, seq
+    log_time = int(time.time() * 1000)
+    if now_time != log_time:
+        now_time = log_time
+        seq = 0
+    seq += 1
+    return '%s_%s_%s' % (log_time, node_id, seq)
 
 
 class LoggerZmqProtocol(aiozmq.ZmqProtocol):
@@ -50,11 +62,14 @@ class LoggerZmqProtocol(aiozmq.ZmqProtocol):
                 'id': data[0].decode('utf8')
             }
 
+            log_data['log_key'] = get_log_key()
+
             self.publish_mq(log_data)
             if log_data['type'] == 'link' or log_data['type'] == 'unlink':
                 temp = log_data['entity']
                 log_data['entity'] = log_data['target']
                 log_data['target'] = temp
+                log_data['log_key'] = get_log_key()
                 self.publish_mq(log_data)
         except:
             return 'fail'.encode('utf8')
@@ -70,17 +85,20 @@ def init_logger():
     global messagequeue_exchange
     messagequeue_exchange = yield from messagequeue_channel.declare_exchange('peacock_job.exchange', 'direct')
 
-    from config import ZOOKEEPER_HOST, BIND_ADDRESS
+    from config import BIND_ADDRESS
     yield from aiozmq.create_zmq_connection(
         lambda: LoggerZmqProtocol(), zmq.REP,
         bind='tcp://%s' % BIND_ADDRESS)
 
-    # 주키퍼에 등록
-    zk = KazooClient(hosts=ZOOKEEPER_HOST)
-    zk.start()
-    zk.create("/peacock/logger/zmq/node", BIND_ADDRESS.encode('utf8'), ephemeral=True, sequence=True, makepath=True)
 
 if __name__ == '__main__':
+    # 주키퍼에 등록
+    from config import ZOOKEEPER_HOST, BIND_ADDRESS
+    zk = KazooClient(hosts=ZOOKEEPER_HOST)
+    zk.start()
+    my_node = zk.create("/peacock/logger/zmq/node", BIND_ADDRESS.encode('utf8'), ephemeral=True, sequence=True, makepath=True)
+    node_id = my_node[my_node.rfind('/')+1:]
+
     loop = asyncio.get_event_loop()
     asyncio.async(init_logger(), loop=loop)
     loop.run_forever()
