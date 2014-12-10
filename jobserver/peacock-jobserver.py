@@ -23,7 +23,7 @@ def init_jobserver():
 
 @asyncio.coroutine
 def job_node_processor(node_index):
-    from procmessage import process_message
+    from jobserver.procmessage import process_message
     queue = yield from mq_channel.declare_queue('peacock_job_%d' % node_index)
     while True:
         if not(node_start_queue_id <= node_index <= node_end_queue_id):
@@ -72,7 +72,6 @@ if __name__ == '__main__':
 
     zk.ChildrenWatch("/peacock/job/nodes", job_node_watch)
     my_node = zk.create("/peacock/job/nodes/node", ephemeral=True, sequence=True, makepath=True)
-    global my_node_name
     my_node_name = my_node[my_node.rfind('/')+1:]
     job_node_watch(zk.get_children("/peacock/job/nodes"))
 

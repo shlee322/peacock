@@ -192,6 +192,7 @@ def manager_service_eventviwer_get_entity_timeline(service_id):
     from couchbase.views.iterator import View, Query
 
     log_db = CouchbaseBucket('couchbase://localhost/events')
+    link_db = CouchbaseBucket('couchbase://localhost/links')
 
     q = Query(
         mapkey_range=[
@@ -223,9 +224,27 @@ def manager_service_eventviwer_get_entity_timeline(service_id):
 
         result_data.append(result_obj)
 
+    links = []
+    link_q = Query(
+        inclusive_end=True,
+        mapkey_range=[
+            [service_id, entity_kind, entity_id, start_timestamp],
+            [service_id, entity_kind, entity_id, end_timestamp]
+        ],
+        limit=100000000
+    )
+
+    link_view = View(link_db, "links", "timeline", query=q)
+    for link in link_view:
+        links.append({
+            'timestamp': link.value['timestamp'],
+            'links': link.value['links']
+        })
+
     return jsonify({
         'status': 'succeeded',
-        'data': result_data
+        'data': result_data,
+        'links': links
     })
 
 

@@ -7,6 +7,7 @@ link_db = CouchbaseBucket('couchbase://localhost/links')
 
 def process_message(message):
     event_db.upsert(message['log_key'], message)
+    print(message)
 
     if message['type'] != 'link' and message['type'] != 'unlink':
         return
@@ -28,9 +29,10 @@ def process_message(message):
         descending=True,
         mapkey_range=[
             [service_id, entity_kind, entity_id, timestamp],
-            [service_id, entity_kind, entity_id, Query.STRING_RANGE_END]
+            [service_id, entity_kind, entity_id, 0]
         ],
-        limit=1
+        limit=1,
+        stale='false'
     )
 
     link_data = {
@@ -40,12 +42,9 @@ def process_message(message):
         'links': []
     }
 
-    try:
-        view = View(link_db, "links", "timeline", query=q)
-        for result in view:
-            link_data = result.value
-    except:
-        pass
+    view = View(link_db, "links", "timeline", query=q)
+    for result in view:
+        link_data = result.value
 
     link_data['timestamp'] = message['timestamp']
     link_db.upsert(main_doc_id, link_data)
@@ -57,32 +56,35 @@ def process_message(message):
             [service_id, entity_kind, entity_id, timestamp],
             [service_id, entity_kind, entity_id, Query.STRING_RANGE_END]
         ],
-        limit=100000000     # TODO : 차후 수정 (만약 100000000개가 넘는게 중간에 들어올 경우 [그럴일은 거의 없지만])
+        limit=100000000,     # TODO : 차후 수정 (만약 100000000개가 넘는게 중간에 들어올 경우 [그럴일은 거의 없지만])
+        stale='false'
     )
 
     view = View(link_db, "links", "timeline", query=q)
 
     for result in view:
-        update_link_data(result.value, target['kind'], target['id'], 1 if message['type'] == 'link' else -1)
+        update_link_data(result.value, timestamp, target['kind'], target['id'], 1 if message['type'] == 'link' else -1)
         link_db.upsert(result.docid, result.value)
 
 
-def update_link_data(data, target_kind, target_id, count):
+def update_link_data(data, timestamp, target_kind, target_id, count):
     remove_links = []
     update = False
     links = data['links']
     for link in links:
         if link['kind'] != target_kind or link['id'] != target_id:
+            if link['count'] == 0 and link['timestamp'] != timestamp:
+                remove_links.append(link)
             continue
+
         update = True
         link['count'] += count
-        if link['count'] == 0:
+        if link['count'] == 0 and link['timestamp'] != timestamp:
             remove_links.append(link)
-
-        break
 
     if not update:
         data['links'].append({
+            'timestamp': timestamp,
             'kind': target_kind,
             'id': target_id,
             'count': count
