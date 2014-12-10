@@ -23,20 +23,23 @@ def init_jobserver():
 
 @asyncio.coroutine
 def job_node_processor(node_index):
+    from procmessage import process_message
     queue = yield from mq_channel.declare_queue('peacock_job_%d' % node_index)
     while True:
         if not(node_start_queue_id <= node_index <= node_end_queue_id):
             jobs[node_index] = None
             return
 
-        # TODO : 큐에서 데이터를 받아와서 적당한 처리
         message = yield from queue.get()
         if not message:
             continue
 
-        data = msgpack.loads(message.body)
-        print(data)
-        message.ack()
+        try:
+            data = msgpack.loads(message.body, encoding='utf-8')
+            process_message(data)
+            message.ack()
+        except Exception as e:
+            message.reject()
 
 
 def job_node_watch(nodes):
@@ -54,7 +57,6 @@ def job_node_watch(nodes):
     node_start_queue_id = int(node_index * ring_size)
     node_end_queue_id = int((node_index+1) * ring_size - 1)
     logging.info("node_start_queue_id = %d, node_end_queue_id = %d" % (node_start_queue_id, node_end_queue_id))
-    print("node_start_queue_id = %d, node_end_queue_id = %d" % (node_start_queue_id, node_end_queue_id))
 
     for i in range(node_start_queue_id, node_end_queue_id):
         if not jobs.get(i):
