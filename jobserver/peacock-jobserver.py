@@ -20,6 +20,10 @@ def init_jobserver():
     mq_connection = yield from asynqp.connect('localhost', 5672, username='guest', password='guest')
     mq_channel = yield from mq_connection.open_channel()
 
+    from jobserver.procmessage import set_mq_exchange
+    exchange = yield from mq_channel.declare_exchange('peacock_job.exchange', 'direct')
+    set_mq_exchange(exchange)
+
 
 @asyncio.coroutine
 def job_node_processor(node_index):
@@ -39,6 +43,7 @@ def job_node_processor(node_index):
             process_message(data)
             message.ack()
         except Exception as e:
+            logging.exception(e)
             message.reject()
 
 

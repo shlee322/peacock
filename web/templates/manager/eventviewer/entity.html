@@ -35,9 +35,9 @@
                     <td>
                         {{ item.timestamp | date:'HH:mm:ss.sss' }} -> {{ item.timestamp+item.timestamp_length | date:'HH:mm:ss.sss' }} {{ item.timestamp_length }}ms
                         <div class="progress">
-                            <div class="progress-bar" style="margin-top: {{ (item.timestamp - start_timestamp) / (end_timestamp - start_timestamp) * 100  | ceil}}%; width: {{ (item.timestamp - start_timestamp) / (end_timestamp - start_timestamp) * 100 | ceil}}%">
+                            <div class="progress-bar" style="margin-top: {{ (item.timestamp - start_view_timestamp) / (end_view_timestamp - start_view_timestamp) * 100  | ceil}}%; width: {{ (item.timestamp - start_view_timestamp) / (end_view_timestamp - start_view_timestamp) * 100 | ceil}}%">
                             </div>
-                            <div class="progress-bar progress-bar-striped" style="width: {{ item.timestamp_length+1 / (end_timestamp - start_timestamp) * 100  | ceil}}%">
+                            <div class="progress-bar progress-bar-striped" style="width: {{ item.timestamp_length+1 / (end_view_timestamp - start_view_timestamp) * 100  | ceil}}%; color: #0f0f0f;">
                                 {{ item.timestamp_length }}ms
                             </div>
                         </div>
@@ -81,46 +81,43 @@
         $http.get('/manager/' + service_id + '/eventviewer/_ajax/get_entity_timeline?kind=' + kind + '&id=' + id +
             '&start_timestamp=' +start_timestamp + '&end_timestamp='+ end_timestamp)
             .success(function (data){
-                    var timeline = data.data;
+                var timeline = data.data;
 
-                    var link_data = {};
-                    var add_link = [];
-                    for(var i=0; i<timeline.length; i++) {
-                        if(timeline[i].type == 'link') {
-                            var target = timeline[i].target.kind + '_' + timeline[i].target.id;
-                            link_data[target] = timeline[i];
-                        } else if(timeline[i].type == 'unlink') {
-                            var target = timeline[i].target.kind + '_' + timeline[i].target.id;
-                            var target_obj = link_data[target];
-                            if(!target_obj) {
-                                target_obj = {
-                                    'type': 'link',
-                                    'timestamp': start_timestamp,
-                                    'target': {
-                                        'kind': timeline[i].target.kind,
-                                        'id': timeline[i].target.id
-                                    }
-                                };
-                                link_data[target] = target_obj;
-                                add_link.push(target_obj);
-                            }
+                for(var i=0; i<timeline.length; i++) {
+                    if(timeline[i].timestamp_length < 0) {
+                        timeline[i].timestamp_length *= -1;
+                        timeline[i].timestamp -= timeline[i].timestamp_length;
+                    }
+                }
 
-                            target_obj.timestamp_length = timeline[i].timestamp - target_obj.timestamp;
-                        }
+                /*
+                var links = {};
+                for(var i=0; i<data.links.length; i++) {
+                    for(var link_i=0; link_i<data.links[i].links.length; link_i++) {
+                        var link_data = data.links[i].links[i];
+                        links[link_data.kind + "_" + link_data.id] = null;//link_data.timestamp
+                    }
+                }
+                */
+
+                var start_view_timestamp = Number.MAX_VALUE;
+                var end_view_timestamp = 0;
+                for(var i=0; i<timeline.length; i++) {
+                    if(timeline[i].timestamp<start_view_timestamp) {
+                        start_view_timestamp = timeline[i].timestamp;
                     }
 
-                    for(var key in link_data) {
-                        if(link_data[key].timestamp_length === undefined) {
-                            link_data[key].timestamp_length = end_timestamp - link_data[key].timestamp;
-                        }
+                    if(end_view_timestamp<timeline[i].timestamp) {
+                        end_view_timestamp = timeline[i].timestamp;
                     }
+                }
 
-                    for(var i=0; i<add_link.length; i++) {
-                        timeline.unshift(add_link[i]);
-                    }
-
-                    console.log(timeline);
-                    $scope.timeline = timeline;
+                start_view_timestamp -= 1;
+                end_view_timestamp += 1;
+                var timestamp_length = end_view_timestamp - start_view_timestamp;
+                $scope.start_view_timestamp = start_view_timestamp - (timestamp_length * 0.1);
+                $scope.end_view_timestamp = end_view_timestamp + (timestamp_length * 0.1);
+                $scope.timeline = timeline;
         });
     });
 
