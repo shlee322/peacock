@@ -262,13 +262,18 @@ def manager_service_analyzer(service_id):
 def manager_analyzer_ajax_add_analyzer(service_id):
     data = request.get_json()
 
-    if data['group']['entity_kind'] == '':
-        data['group']['entity_kind'] = None
+    data['service'] = {
+        'id': service_id
+    }
 
-    print(data)
+    from couchbase.bucket import Bucket as CouchbaseBucket
+    analyzer_db = CouchbaseBucket('couchbase://localhost/analyzers')
+    import hashlib
+    analyzer_key = hashlib.sha256(("%s_%s" % (service_id, data['name'])).encode('utf8')).hexdigest()
+    analyzer_db.insert(analyzer_key, data)
+
     return jsonify({
-        'status': 'failed',
-        'message': 'test'
+        'status': 'succeeded'
     })
 
 

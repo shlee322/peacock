@@ -46,9 +46,11 @@ class LoggerZmqProtocol(aiozmq.ZmqProtocol):
     def publish_mq(self, obj):
         import hashlib
         import struct
+        from logger.config import JOB_RING_SIZE
+
         log_key = "%s_%s" % (obj['entity']['kind'], obj['entity']['id'])
         log_key = struct.unpack('>I', hashlib.md5(log_key.encode('utf8')).digest()[0:4])
-        log_key = log_key[0] % 8192
+        log_key = log_key[0] % JOB_RING_SIZE
 
         messagequeue_exchange.publish(asynqp.Message(msgpack.packb(obj)), 'peacock_job_%d' % log_key)
 

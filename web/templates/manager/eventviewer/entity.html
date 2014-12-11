@@ -30,7 +30,7 @@
             </thead>
             <tbody>
                 <tr ng-repeat="item in timeline | filter:{ type: '!unlink'}">
-                    <td ng-if="item.type == 'link'">{{ item.target.kind }}</td>
+                    <td ng-if="item.type == 'link'"><a ng-click="view_entity(item.kind,item.id,item.timestamp)">{{ item.kind }}</a></td>
                     <td ng-if="item.type == 'event'">{{ entity_kind }}.{{ item.event_name }}</td>
                     <td>
                         {{ item.timestamp | date:'HH:mm:ss.sss' }} -> {{ item.timestamp+item.timestamp_length | date:'HH:mm:ss.sss' }} {{ item.timestamp_length }}ms
@@ -60,9 +60,13 @@
         return Math.ceil(input);
       };
     });
-    peacock.controller('entityModalController', function ($scope, $modalInstance, $filter, $http, kind, id, timestamp) {
+    peacock.controller('entityModalController', function ($scope, $modalInstance, $filter, $http, $modal, kind, id, timestamp) {
         $scope.entity_kind = kind;
         $scope.entity_id = id;
+
+        $scope.view_entity = function (kind, id, timestamp) {
+            openEntityModal($modal, kind, id, timestamp);
+        };
 
 
         timestamp += 500;
@@ -90,15 +94,85 @@
                     }
                 }
 
-                /*
-                var links = {};
+                var link_entity = {};
+
+                function push_link_info(kind, id, type, timestamp) {
+                    var data = link_entity[kind + '_'+ id];
+                    data.check = true;
+
+                    if(data.list.length > 0) {
+                        if(data.list[data.list.length - 1].type == type) {
+                            return;
+                        }
+                    }
+
+                    if(start_timestamp > timestamp) {
+                        timestamp = start_timestamp;
+                    }
+
+                    data.list.push({
+                        'type': type,
+                        'timestamp': timestamp
+                    });
+                }
+
                 for(var i=0; i<data.links.length; i++) {
+                    for(var entity_i=0; entity_i<link_entity.length; entity_i++) {
+                        link_entity[entity_i].check = false;
+                    }
+
                     for(var link_i=0; link_i<data.links[i].links.length; link_i++) {
-                        var link_data = data.links[i].links[i];
-                        links[link_data.kind + "_" + link_data.id] = null;//link_data.timestamp
+                        var link_data = data.links[i].links[link_i];
+                        if(!link_entity[link_data.kind + '_'+ link_data.id]) {
+                            link_entity[link_data.kind + '_'+ link_data.id] = {
+                                kind:link_data.kind,
+                                id:link_data.id,
+                                list:[],
+                                check:true
+                            };
+                        }
+
+                        link_entity[link_data.kind + '_'+ link_data.id].check = true;
+
+                        if(link_data.count == 0) { //1ms미만 시간에 링크 해제된 엔티티
+                            //링크, 언링크 추가
+                            push_link_info(link_data.kind, link_data.id, 'link', link_data.timestamp);
+                            push_link_info(link_data.kind, link_data.id, 'unlink', link_data.timestamp);
+                        } else {
+                            push_link_info(link_data.kind, link_data.id, 'link', link_data.timestamp);
+                        }
+                    }
+
+                    //link_entity를 뒤지면서 변경안된거 unlink 표시
+                    for(var entity_i=0; entity_i<link_entity.length; entity_i++) {
+                        if(!link_entity[entity_i].check) {
+                            push_link_info(link_entity[entity_i].kind, link_entity[entity_i].id, 'unlink', data.links[i].timestamp);
+                        }
                     }
                 }
-                */
+
+                for(var id in link_entity) {
+                    var data = link_entity[id];
+
+                    //만약 맨앞이 unlink라면 그앞에 link추가
+                    if(data.list[0].type == 'unlink') {
+                        data.list.unshift({
+                            'type':'link',
+                            'timestamp': start_timestamp
+                        })
+                    }
+
+                    for(var i=0; i<data.list.length; i+=2) {
+                        timeline.unshift({
+                            'type': 'link',
+                            'kind': data.kind,
+                            'id': data.id,
+                            'timestamp': data.list[i].timestamp,
+                            'timestamp_length': data.list.length < i+1 ? data.list[i+1].timestamp - data.list[i].timestamp : 0
+                        });
+                    }
+                }
+                console.log(timeline);
 
                 var start_view_timestamp = Number.MAX_VALUE;
                 var end_view_timestamp = 0;

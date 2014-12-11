@@ -31,6 +31,7 @@ peacock.controller('addAnalyzerController', function($scope, $filter, $modal, $h
     $scope.addAnalyzer.submit = function() {
         console.log("ASFdfd");
         var data = {
+            'name': $scope.addAnalyzer.name,
             'input': $scope.inputList,
             'group': {
                 'time': Number($scope.addAnalyzer.group_time),

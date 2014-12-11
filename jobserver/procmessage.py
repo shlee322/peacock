@@ -4,6 +4,8 @@ from couchbase.views.iterator import View, Query
 exchange = None
 event_db = CouchbaseBucket('couchbase://localhost/events')
 link_db = CouchbaseBucket('couchbase://localhost/links')
+analyzer_db = CouchbaseBucket('couchbase://localhost/analyzers')
+analyzer_input_db = CouchbaseBucket('couchbase://localhost/analyzer_input')
 
 
 def set_mq_exchange(ex):
@@ -37,7 +39,78 @@ def process_message(message):
         # 그룹 탐색 (만약 이미 해당 이벤트가 다른 그룹인 경우 제거)
         # 그룹 인풋에 데이터 쓰기
         # log_key
-        pass
+        update_entity(message)
+
+
+def update_entity(message):
+    event_data = event_db.get(message['log_key'])
+
+    event = event_data.value
+    q = Query(
+        inclusive_end=True,
+        mapkey_range=[
+            [event['service']['id'], event['entity']['kind'], event['event_name'], ],
+            [event['service']['id'], event['entity']['kind'], event['event_name'], Query.STRING_RANGE_END]
+        ],
+        limit=1000000
+    )
+
+    view = View(analyzer_db, "analyzers", "event_to_analyzer", query=q)
+    for result in view:
+        update_entity_analyzer(result.docid, result.value, event)
+
+
+def update_entity_analyzer(analyzer_id, analyzer, event):
+    # analyzer에서 정보 긁어와서 그룹핑 해주고 리듀스 호출
+
+    groups = []
+    group_time = 0
+    if analyzer['group'].get('time'):
+        group_time = int(event['timestamp'] / analyzer['group']['time'])
+
+    if not analyzer['group'].get('entity_kind'):
+        groups.append([group_time, ''])
+    else:
+        if analyzer['group']['entity_kind'] == event['entity']['kind']:
+            groups.append([group_time, event['entity']['id']])
+
+        q = Query(
+            inclusive_end=True,
+            descending=True,
+            mapkey_range=[
+                [event['service']['id'], event['entity']['kind'], event['entity']['id'], event['timestamp']],
+                [event['service']['id'], event['entity']['kind'], event['entity']['id'], 0]
+            ],
+            limit=1,
+            stale='false'
+        )
+
+        view = View(link_db, "links", "timeline", query=q)
+        # ㄹㅇ 똥코드 ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ 데드라인이 코앞이다 으아아아아아아럼ㅇ나리ㅓ래ㅑ저맫
+        for result in view:
+            for link in result.value['links']:
+                if analyzer['group']['entity_kind'] == link['kind']:
+                    groups.append([group_time, link['id']])
+            break
+
+    # 관련있는자료 업데이트하고
+    print(event)
+    print(groups)
+
+
+    # {
+    #   'analyzer_key': '',
+    #   'group': [],
+    #   'event_id': log_key
+    # }
+    # old_data = analyzer_input_db.get("%s_%s_%s" % (analyzer_id, event['log_key'], ))
+
+    # 기존 input된 값 가져옴
+    # add, remove, mot
+
+
+    # input analyzer - group(time, entity_id) - event
+    pass
 
 
 def notify_update_entity(entity_kind, entity_id, log_key):
@@ -46,9 +119,11 @@ def notify_update_entity(entity_kind, entity_id, log_key):
     import asynqp
     import msgpack
 
+    from jobserver.config import JOB_RING_SIZE
+
     hash_key = "%s_%s" % (entity_kind, entity_id)
     hash_key = struct.unpack('>I', hashlib.md5(hash_key.encode('utf8')).digest()[0:4])
-    hash_key = hash_key[0] % 8192
+    hash_key = hash_key[0] % JOB_RING_SIZE
 
     obj = {
         'log_key': log_key,

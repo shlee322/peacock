@@ -27,15 +27,18 @@ def init_jobserver():
 
 @asyncio.coroutine
 def job_node_processor(node_index):
+    logging.info("job_node_processor - %d" % node_index)
+
     from jobserver.procmessage import process_message
     queue = yield from mq_channel.declare_queue('peacock_job_%d' % node_index)
     while True:
         if not(node_start_queue_id <= node_index <= node_end_queue_id):
             jobs[node_index] = None
-            return
+            break
 
         message = yield from queue.get()
         if not message:
+            yield from asyncio.sleep(0.2)
             continue
 
         try:
@@ -51,11 +54,12 @@ def job_node_watch(nodes):
     if not my_node_name or len(nodes) < 1:
         return
 
-    # 링이 8192로 나눠져 있음
-    # 8192를 nodes의 길이로 나누고
+    # 링이 JOB_RING_SIZE로 나눠져 있음
+    # JOB_RING_SIZE를 nodes의 길이로 나누고
     # 노드의 index를 곱한거 ~ (노드인덱스+1)
 
-    ring_size = 8192 / len(nodes)
+    from jobserver.config import JOB_RING_SIZE
+    ring_size = JOB_RING_SIZE / len(nodes)
     node_index = nodes.index(my_node_name)
 
     global node_start_queue_id, node_end_queue_id
@@ -65,10 +69,23 @@ def job_node_watch(nodes):
 
     for i in range(node_start_queue_id, node_end_queue_id):
         if not jobs.get(i):
-            asyncio.async(job_node_processor(i), loop=loop)
+            jobs[i] = job_node_processor(i)
+            asyncio.async(jobs[i], loop=loop)
 
 
 if __name__ == '__main__':
+    import logging
+    import sys
+
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    root.addHandler(ch)
+
     asyncio.get_event_loop().run_until_complete(init_jobserver())
 
     from config import ZOOKEEPER_HOST

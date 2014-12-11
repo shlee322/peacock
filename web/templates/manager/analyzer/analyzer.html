@@ -30,6 +30,8 @@
         <h4 class="modal-title" id="myModalLabel">Add Analyzer</h4>
       </div>
       <div class="modal-body">
+        <h4>Analyzer Name</h4>
+        <input type="text" class="form-control input-sm" placeholder="Analyzer Name" ng-model="addAnalyzer.name">
         <h4>Input  <small>Event나 Analyzer를 입력으로 받을 수 있습니다.</small> <button class="btn btn-default btn-sm" ng-click="isAddEditView = !isAddEditView">view</button></h4>
         <div collapse="isAddEditView">
             <div class="panel panel-default">
