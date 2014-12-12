@@ -248,6 +248,18 @@ def manager_service_eventviwer_get_entity_timeline(service_id):
     })
 
 
+@blueprint.route('/manager/<service_id>/eventviewer/_ajax/get_event_data')
+def manager_service_eventviwer_get_event_data(service_id):
+    id = request.args['id']
+    from couchbase.bucket import Bucket as CouchbaseBucket
+    log_db = CouchbaseBucket('couchbase://localhost/events')
+    data = log_db.get(id)
+    return jsonify({
+        'status': 'succeeded',
+        'data': data.value['data']
+    })
+
+
 @blueprint.route('/manager/<service_id>/analyzer')
 def manager_service_analyzer(service_id):
     from .funcs import get_service_name, get_menus

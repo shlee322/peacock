@@ -4,6 +4,7 @@
         <h3 class="modal-title">{{ entity_kind  }} - {{ entity_id }}</h3>
     </div>
     <div class="modal-body">
+        <pre ng-if="event_data">{{ event_data | json }}</pre>
         <form role="form" ng-submit="formData.submit()">
             <div  class="form-inline">
                 <div class="form-group">
@@ -35,7 +36,7 @@
                         <span class="label label-success" ng-if="item.type == 'event'">event</span>
                     </td>
                     <td ng-if="item.type == 'link'"><a ng-click="view_entity(item.kind,item.id,item.timestamp)">{{ item.kind }}</a></td>
-                    <td ng-if="item.type == 'event'">{{ entity_kind }}.{{ item.event_name }}</td>
+                    <td ng-if="item.type == 'event'"><a ng-click="view_event(item.id)">{{ entity_kind }}.{{ item.event_name }}</a></td>
                     <td>
                         {{ item.timestamp | date:'HH:mm:ss.sss' }} -> {{ item.timestamp+item.timestamp_length | date:'HH:mm:ss.sss' }} {{ item.timestamp_length }}ms
                         <div class="progress">
@@ -71,7 +72,12 @@
             $scope.formData.start = timestamp - 500;
             $scope.formData.end = timestamp + 500;
             $scope.formData.submit();
-            //openEntityModal($modal, kind, id, timestamp);
+        };
+
+        $scope.view_event = function (id) {
+            $http.get('/manager/' + service_id + '/eventviewer/_ajax/get_event_data?id=' + id).success(function (data){
+                $scope.event_data = data.data;
+            });
         };
 
         timestamp += 500;
@@ -95,6 +101,7 @@
             $scope.entity_kind = kind;
             $scope.entity_id = id;
 
+            $scope.event_data = null;
 
             $http.get('/manager/' + service_id + '/eventviewer/_ajax/get_entity_timeline?kind=' + kind + '&id=' + id +
                 '&start_timestamp=' +start_timestamp + '&end_timestamp='+ end_timestamp)
