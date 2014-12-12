@@ -45,7 +45,26 @@ def process_message(message):
 
 
 def process_analyzer_group(message):
-    print(message)
+    analyzer = analyzer_db.get(message['analyzer_id']).value
+
+    q = Query(
+        inclusive_end=True,
+        mapkey_range=[
+            [analyzer['service']['id'], message['analyzer_id'], message['group'][0], message['group'][1], ],
+            [analyzer['service']['id'], message['analyzer_id'], message['group'][0], message['group'][1], Query.STRING_RANGE_END]
+        ],
+        limit=1000000
+    )
+
+    view = View(analyzer_input_db, "input", "group", query=q)
+    input_data = []
+    for result in view:
+        input_data.append(event_db.get(result.value).value)
+
+    from jobserver.group_reduce import group_reduce
+    group_reduce(input_data, analyzer['processor_script'])
+    # result update
+
 
 
 def update_entity(message):
@@ -70,6 +89,11 @@ def update_entity_analyzer(analyzer_id, analyzer, event):
     # analyzer에서 정보 긁어와서 그룹핑 해주고 리듀스 호출
 
     groups = []
+
+    #import lupa
+    #from lupa import LuaRuntime
+    #lua = LuaRuntime(unpack_returned_tuples=True)
+
     if True:    # TODO : input filter
         group_time = 0
         if analyzer['group'].get('time'):
@@ -99,8 +123,6 @@ def update_entity_analyzer(analyzer_id, analyzer, event):
                     if analyzer['group']['entity_kind'] == link['kind']:
                         groups.append((group_time, link['id']))
                 break
-    else:
-        pass
 
     # 기존의 자료 제거
     # 관련있는자료 업데이트하고
