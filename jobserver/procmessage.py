@@ -64,53 +64,72 @@ def update_entity_analyzer(analyzer_id, analyzer, event):
     # analyzer에서 정보 긁어와서 그룹핑 해주고 리듀스 호출
 
     groups = []
-    group_time = 0
-    if analyzer['group'].get('time'):
-        group_time = int(event['timestamp'] / analyzer['group']['time'])
+    if True:
+        group_time = 0
+        if analyzer['group'].get('time'):
+            group_time = int(event['timestamp'] / analyzer['group']['time'])
 
-    if not analyzer['group'].get('entity_kind'):
-        groups.append([group_time, ''])
+        if not analyzer['group'].get('entity_kind'):
+            groups.append((group_time, ''))
+        else:
+            if analyzer['group']['entity_kind'] == event['entity']['kind']:
+                groups.append((group_time, event['entity']['id']))
+
+            q = Query(
+                inclusive_end=True,
+                descending=True,
+                mapkey_range=[
+                    [event['service']['id'], event['entity']['kind'], event['entity']['id'], event['timestamp']],
+                    [event['service']['id'], event['entity']['kind'], event['entity']['id'], 0]
+                ],
+                limit=1,
+                stale='false'
+            )
+
+            view = View(link_db, "links", "timeline", query=q)
+            # ㄹㅇ 똥코드 ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ 데드라인이 코앞이다 으아아아아아아럼ㅇ나리ㅓ래ㅑ저맫
+            for result in view:
+                for link in result.value['links']:
+                    if analyzer['group']['entity_kind'] == link['kind']:
+                        groups.append((group_time, link['id']))
+                break
     else:
-        if analyzer['group']['entity_kind'] == event['entity']['kind']:
-            groups.append([group_time, event['entity']['id']])
+        pass
 
-        q = Query(
-            inclusive_end=True,
-            descending=True,
-            mapkey_range=[
-                [event['service']['id'], event['entity']['kind'], event['entity']['id'], event['timestamp']],
-                [event['service']['id'], event['entity']['kind'], event['entity']['id'], 0]
-            ],
-            limit=1,
-            stale='false'
-        )
-
-        view = View(link_db, "links", "timeline", query=q)
-        # ㄹㅇ 똥코드 ㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋㅋ 데드라인이 코앞이다 으아아아아아아럼ㅇ나리ㅓ래ㅑ저맫
-        for result in view:
-            for link in result.value['links']:
-                if analyzer['group']['entity_kind'] == link['kind']:
-                    groups.append([group_time, link['id']])
-            break
-
+    # 기존의 자료 제거
     # 관련있는자료 업데이트하고
-    print(event)
-    print(groups)
+    exist_groups = {}
+    for group in groups:
+        group_key = '%s_%s' % group
+        exist_groups[group_key] = True
+        analyzer_input_db.upsert("%s_%s_%s" % (analyzer_id, group_key, event['log_key']), {
+            'service': {
+                'id': event['service']['id']
+            },
+            'analyzer_id': analyzer_id,
+            'group': group,
+            'event_id': event['log_key']
+        })
 
+        # 리듀스 호출
+        update_analyzer_group(analyzer_id, group_key)
 
-    # {
-    #   'analyzer_key': '',
-    #   'group': [],
-    #   'event_id': log_key
-    # }
-    # old_data = analyzer_input_db.get("%s_%s_%s" % (analyzer_id, event['log_key'], ))
+    q = Query(
+        mapkey_range=[
+            [event['service']['id'], analyzer_id, event['log_key'], ],
+            [event['service']['id'], analyzer_id, event['log_key'], Query.STRING_RANGE_END]
+        ],
+        limit=100000000,     # TODO : 차후 수정 (만약 100000000개가 넘는게 중간에 들어올 경우 [그럴일은 거의 없지만])
+    )
 
-    # 기존 input된 값 가져옴
-    # add, remove, mot
-
-
-    # input analyzer - group(time, entity_id) - event
-    pass
+    view = View(analyzer_input_db, "input", "event", query=q)
+    for result in view:
+        group = result.value['group']
+        group_key = '%s_%s' % (group[0], group[1])
+        if not exist_groups.get(group_key):
+            analyzer_input_db.remove("%s_%s_%s" % (analyzer_id, group_key, event['log_key']))
+            # 삭제후 리듀스 호출
+            update_analyzer_group(analyzer_id, group_key)
 
 
 def notify_update_entity(entity_kind, entity_id, log_key):
@@ -128,6 +147,27 @@ def notify_update_entity(entity_kind, entity_id, log_key):
     obj = {
         'log_key': log_key,
         'type': 'update_entity'
+    }
+
+    exchange.publish(asynqp.Message(msgpack.packb(obj)), 'peacock_job_%d' % hash_key)
+
+
+def update_analyzer_group(analyzer_id, group):
+    import hashlib
+    import struct
+    import asynqp
+    import msgpack
+
+    from jobserver.config import JOB_RING_SIZE
+
+    hash_key = "%s_%s_%s" % (analyzer_id, group[0], group[1])
+    hash_key = struct.unpack('>I', hashlib.md5(hash_key.encode('utf8')).digest()[0:4])
+    hash_key = hash_key[0] % JOB_RING_SIZE
+
+    obj = {
+        'type': 'update_analyzer_group',
+        'analyzer_id': analyzer_id,
+        'group': group
     }
 
     exchange.publish(asynqp.Message(msgpack.packb(obj)), 'peacock_job_%d' % hash_key)
