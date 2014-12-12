@@ -9,8 +9,8 @@ def init_mq():
     messagequeue_exchange = yield from messagequeue_channel.declare_exchange('peacock_job.exchange', 'direct')
 
     import logging
-
-    for i in range(8192):
+    from jobserver.config import JOB_RING_SIZE
+    for i in range(JOB_RING_SIZE):
         logging.info("Init Queue - %d" % i)
         queue = yield from messagequeue_channel.declare_queue('peacock_job_%d' % i)
         yield from queue.bind(messagequeue_exchange, 'peacock_job_%d' % i)

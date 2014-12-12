@@ -40,6 +40,12 @@ def process_message(message):
         # 그룹 인풋에 데이터 쓰기
         # log_key
         update_entity(message)
+    elif message['type'] == 'update_analyzer_group':
+        process_analyzer_group(message)
+
+
+def process_analyzer_group(message):
+    print(message)
 
 
 def update_entity(message):
@@ -64,7 +70,7 @@ def update_entity_analyzer(analyzer_id, analyzer, event):
     # analyzer에서 정보 긁어와서 그룹핑 해주고 리듀스 호출
 
     groups = []
-    if True:
+    if True:    # TODO : input filter
         group_time = 0
         if analyzer['group'].get('time'):
             group_time = int(event['timestamp'] / analyzer['group']['time'])
@@ -112,7 +118,7 @@ def update_entity_analyzer(analyzer_id, analyzer, event):
         })
 
         # 리듀스 호출
-        update_analyzer_group(analyzer_id, group_key)
+        update_analyzer_group(analyzer_id, group)
 
     q = Query(
         mapkey_range=[
@@ -129,7 +135,7 @@ def update_entity_analyzer(analyzer_id, analyzer, event):
         if not exist_groups.get(group_key):
             analyzer_input_db.remove("%s_%s_%s" % (analyzer_id, group_key, event['log_key']))
             # 삭제후 리듀스 호출
-            update_analyzer_group(analyzer_id, group_key)
+            update_analyzer_group(analyzer_id, group)
 
 
 def notify_update_entity(entity_kind, entity_id, log_key):
