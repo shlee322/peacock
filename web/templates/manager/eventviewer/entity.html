@@ -4,40 +4,44 @@
         <h3 class="modal-title">{{ entity_kind  }} - {{ entity_id }}</h3>
     </div>
     <div class="modal-body">
-        <form class="form-inline" role="form">
-            <div class="form-group">
-                <input type="date" class="form-control" id="date" ng-model="formData.start_date" readonly>
+        <form role="form" ng-submit="formData.submit()">
+            <div  class="form-inline">
+                <div class="form-group">
+                    <input type="text" class="form-control" ng-model="formData.kind">
+                    <input type="text" class="form-control" ng-model="formData.id">
+                </div>
             </div>
-            <div class="form-group">
-                <input type="time" class="form-control" id="time" ng-model="formData.start_time" readonly>
-            </div>
-            <div class="form-group">
-                ~
-            </div>
-            <div class="form-group">
-                <input type="date" class="form-control" id="date" ng-model="formData.end_date" readonly>
-            </div>
-            <div class="form-group">
-                <input type="time" class="form-control" id="time" ng-model="formData.end_time" readonly>
+            <div  class="form-inline">
+                <div class="form-group">
+                    <input type="text" class="form-control" ng-model="formData.start">
+                    <span>~</span>
+                    <input type="text" class="form-control" ng-model="formData.end">
+                    <button type="submit" class="btn btn-default">Move</button>
+                </div>
             </div>
         </form>
         <table class="table table-condensed">
             <thead>
                 <tr>
-                    <th width="120px">Event</th>
+                    <th width="120px">Type</th>
+                    <th width="120px">Name</th>
                     <th width="*">Timeline</th>
                 </tr>
             </thead>
             <tbody>
                 <tr ng-repeat="item in timeline | filter:{ type: '!unlink'}">
+                    <td>
+                        <span class="label label-primary" ng-if="item.type == 'link'">link</span>
+                        <span class="label label-success" ng-if="item.type == 'event'">event</span>
+                    </td>
                     <td ng-if="item.type == 'link'"><a ng-click="view_entity(item.kind,item.id,item.timestamp)">{{ item.kind }}</a></td>
                     <td ng-if="item.type == 'event'">{{ entity_kind }}.{{ item.event_name }}</td>
                     <td>
                         {{ item.timestamp | date:'HH:mm:ss.sss' }} -> {{ item.timestamp+item.timestamp_length | date:'HH:mm:ss.sss' }} {{ item.timestamp_length }}ms
                         <div class="progress">
-                            <div class="progress-bar" style="margin-top: {{ (item.timestamp - start_view_timestamp) / (end_view_timestamp - start_view_timestamp) * 100  | ceil}}%; width: {{ (item.timestamp - start_view_timestamp) / (end_view_timestamp - start_view_timestamp) * 100 | ceil}}%">
+                            <div class="progress-bar" style="margin-top: {{ (item.timestamp - start_view_timestamp) / (end_view_timestamp - start_view_timestamp) * 100}}%; width: {{ (item.timestamp - start_view_timestamp) / (end_view_timestamp - start_view_timestamp) * 100}}%">
                             </div>
-                            <div class="progress-bar progress-bar-striped" style="width: {{ item.timestamp_length+1 / (end_view_timestamp - start_view_timestamp) * 100  | ceil}}%; color: #0f0f0f;">
+                            <div class="progress-bar progress-bar-striped" style="width: {{ item.timestamp_length+1 / (end_view_timestamp - start_view_timestamp) * 100}}%; color: #0f0f0f;">
                                 {{ item.timestamp_length }}ms
                             </div>
                         </div>
@@ -61,138 +65,159 @@
       };
     });
     peacock.controller('entityModalController', function ($scope, $modalInstance, $filter, $http, $modal, kind, id, timestamp) {
-        $scope.entity_kind = kind;
-        $scope.entity_id = id;
-
         $scope.view_entity = function (kind, id, timestamp) {
-            openEntityModal($modal, kind, id, timestamp);
+            $scope.formData.kind = kind;
+            $scope.formData.id = id;
+            $scope.formData.start = timestamp - 500;
+            $scope.formData.end = timestamp + 500;
+            $scope.formData.submit();
+            //openEntityModal($modal, kind, id, timestamp);
         };
-
 
         timestamp += 500;
         var start_timestamp = timestamp - 1000;
         var end_timestamp = timestamp;
-        $scope.start_timestamp = start_timestamp;
-        $scope.end_timestamp = end_timestamp;
-
         $scope.formData = {};
-        $scope.formData.start_date = $filter('date')(start_timestamp, 'yyyy-MM-dd');
-        $scope.formData.start_time = $filter('date')(start_timestamp, 'HH:mm:ss');
-        $scope.formData.end_date = $filter('date')(end_timestamp, 'yyyy-MM-dd');
-        $scope.formData.end_time = $filter('date')(end_timestamp, 'HH:mm:ss');
+        $scope.formData.kind = kind;
+        $scope.formData.id = id;
+        $scope.formData.start = start_timestamp;
+        $scope.formData.end = end_timestamp;
+
+        $scope.formData.submit = function () {
+            kind = $scope.formData.kind;
+            id = $scope.formData.id;
+            start_timestamp = $scope.formData.start;
+            end_timestamp = $scope.formData.end;
+
+            $scope.start_timestamp = start_timestamp;
+            $scope.end_timestamp = end_timestamp;
+
+            $scope.entity_kind = kind;
+            $scope.entity_id = id;
 
 
-        $http.get('/manager/' + service_id + '/eventviewer/_ajax/get_entity_timeline?kind=' + kind + '&id=' + id +
-            '&start_timestamp=' +start_timestamp + '&end_timestamp='+ end_timestamp)
-            .success(function (data){
-                var timeline = data.data;
+            $http.get('/manager/' + service_id + '/eventviewer/_ajax/get_entity_timeline?kind=' + kind + '&id=' + id +
+                '&start_timestamp=' +start_timestamp + '&end_timestamp='+ end_timestamp)
+                .success(function (data){
+                    var timeline = data.data;
 
-                for(var i=0; i<timeline.length; i++) {
-                    if(timeline[i].timestamp_length < 0) {
-                        timeline[i].timestamp_length *= -1;
-                        timeline[i].timestamp -= timeline[i].timestamp_length;
-                    }
-                }
-
-                var link_entity = {};
-
-                function push_link_info(kind, id, type, timestamp) {
-                    var data = link_entity[kind + '_'+ id];
-                    data.check = true;
-
-                    if(data.list.length > 0) {
-                        if(data.list[data.list.length - 1].type == type) {
-                            return;
+                    for(var i=0; i<timeline.length; i++) {
+                        if(timeline[i].timestamp_length < 0) {
+                            timeline[i].timestamp_length *= -1;
+                            timeline[i].timestamp -= timeline[i].timestamp_length;
                         }
                     }
 
-                    if(start_timestamp > timestamp) {
-                        timestamp = start_timestamp;
-                    }
+                    var link_entity = {};
 
-                    data.list.push({
-                        'type': type,
-                        'timestamp': timestamp
-                    });
-                }
+                    function push_link_info(kind, id, type, timestamp) {
+                        var data = link_entity[kind + '_'+ id];
+                        data.check = true;
 
-                for(var i=0; i<data.links.length; i++) {
-                    for(var entity_i=0; entity_i<link_entity.length; entity_i++) {
-                        link_entity[entity_i].check = false;
-                    }
-
-                    for(var link_i=0; link_i<data.links[i].links.length; link_i++) {
-                        var link_data = data.links[i].links[link_i];
-                        if(!link_entity[link_data.kind + '_'+ link_data.id]) {
-                            link_entity[link_data.kind + '_'+ link_data.id] = {
-                                kind:link_data.kind,
-                                id:link_data.id,
-                                list:[],
-                                check:true
-                            };
+                        if(data.list.length > 0) {
+                            if(data.list[data.list.length - 1].type == type) {
+                                return;
+                            }
                         }
 
-                        link_entity[link_data.kind + '_'+ link_data.id].check = true;
-
-                        if(link_data.count == 0) { //1ms미만 시간에 링크 해제된 엔티티
-                            //링크, 언링크 추가
-                            push_link_info(link_data.kind, link_data.id, 'link', link_data.timestamp);
-                            push_link_info(link_data.kind, link_data.id, 'unlink', link_data.timestamp);
-                        } else {
-                            push_link_info(link_data.kind, link_data.id, 'link', link_data.timestamp);
+                        if(start_timestamp > timestamp) {
+                            timestamp = start_timestamp;
                         }
-                    }
 
-                    //link_entity를 뒤지면서 변경안된거 unlink 표시
-                    for(var entity_i=0; entity_i<link_entity.length; entity_i++) {
-                        if(!link_entity[entity_i].check) {
-                            push_link_info(link_entity[entity_i].kind, link_entity[entity_i].id, 'unlink', data.links[i].timestamp);
-                        }
-                    }
-                }
-
-                for(var id in link_entity) {
-                    var data = link_entity[id];
-
-                    //만약 맨앞이 unlink라면 그앞에 link추가
-                    if(data.list[0].type == 'unlink') {
-                        data.list.unshift({
-                            'type':'link',
-                            'timestamp': start_timestamp
-                        })
-                    }
-
-                    for(var i=0; i<data.list.length; i+=2) {
-                        timeline.unshift({
-                            'type': 'link',
-                            'kind': data.kind,
-                            'id': data.id,
-                            'timestamp': data.list[i].timestamp,
-                            'timestamp_length': data.list.length < i+1 ? data.list[i+1].timestamp - data.list[i].timestamp : 0
+                        data.list.push({
+                            'type': type,
+                            'timestamp': timestamp
                         });
                     }
-                }
-                console.log(timeline);
 
-                var start_view_timestamp = Number.MAX_VALUE;
-                var end_view_timestamp = 0;
-                for(var i=0; i<timeline.length; i++) {
-                    if(timeline[i].timestamp<start_view_timestamp) {
-                        start_view_timestamp = timeline[i].timestamp;
+                    for(var i=0; i<data.links.length; i++) {
+                        for(var entity_i=0; entity_i<link_entity.length; entity_i++) {
+                            link_entity[entity_i].check = false;
+                        }
+
+                        for(var link_i=0; link_i<data.links[i].links.length; link_i++) {
+                            var link_data = data.links[i].links[link_i];
+                            if(!link_entity[link_data.kind + '_'+ link_data.id]) {
+                                link_entity[link_data.kind + '_'+ link_data.id] = {
+                                    kind:link_data.kind,
+                                    id:link_data.id,
+                                    list:[],
+                                    check:true
+                                };
+                            }
+
+                            link_entity[link_data.kind + '_'+ link_data.id].check = true;
+
+                            if(link_data.count == 0) { //1ms미만 시간에 링크 해제된 엔티티
+                                //링크, 언링크 추가
+                                push_link_info(link_data.kind, link_data.id, 'link', link_data.timestamp);
+                                push_link_info(link_data.kind, link_data.id, 'unlink', link_data.timestamp);
+                            } else {
+                                push_link_info(link_data.kind, link_data.id, 'link', link_data.timestamp);
+                            }
+                        }
+
+                        //link_entity를 뒤지면서 변경안된거 unlink 표시
+                        for(var entity_i=0; entity_i<link_entity.length; entity_i++) {
+                            if(!link_entity[entity_i].check) {
+                                push_link_info(link_entity[entity_i].kind, link_entity[entity_i].id, 'unlink', data.links[i].timestamp);
+                            }
+                        }
                     }
 
-                    if(end_view_timestamp<timeline[i].timestamp) {
-                        end_view_timestamp = timeline[i].timestamp;
-                    }
-                }
+                    for(var id in link_entity) {
+                        var data = link_entity[id];
 
-                start_view_timestamp -= 1;
-                end_view_timestamp += 1;
-                var timestamp_length = end_view_timestamp - start_view_timestamp;
-                $scope.start_view_timestamp = start_view_timestamp - (timestamp_length * 0.1);
-                $scope.end_view_timestamp = end_view_timestamp + (timestamp_length * 0.1);
-                $scope.timeline = timeline;
-        });
+                        //만약 맨앞이 unlink라면 그앞에 link추가
+                        if(data.list[0].type == 'unlink') {
+                            data.list.unshift({
+                                'type':'link',
+                                'timestamp': start_timestamp
+                            })
+                        }
+
+                        for(var i=0; i<data.list.length; i+=2) {
+                            timeline.unshift({
+                                'type': 'link',
+                                'kind': data.kind,
+                                'id': data.id,
+                                'timestamp': data.list[i].timestamp,
+                                'timestamp_length': data.list.length < i+1 ? data.list[i+1].timestamp - data.list[i].timestamp : 0
+                            });
+                        }
+                    }
+
+                    var start_view_timestamp = Number.MAX_VALUE;
+                    var end_view_timestamp = 0;
+                    for(var i=0; i<timeline.length; i++) {
+                        if(timeline[i].timestamp<start_view_timestamp) {
+                            start_view_timestamp = timeline[i].timestamp;
+                        }
+
+                        if(end_view_timestamp<timeline[i].timestamp) {
+                            end_view_timestamp = timeline[i].timestamp;
+                        }
+                    }
+
+                    //정렬
+                    timeline.sort(function (a, b){
+                        if (a.timestamp < b.timestamp)
+                            return -1;
+                        if (a.timestamp > b.timestamp)
+                            return 1;
+                        return 0;
+                    });
+
+                    start_view_timestamp -= 1;
+                    end_view_timestamp += 1;
+                    var timestamp_length = end_view_timestamp - start_view_timestamp;
+                    $scope.start_view_timestamp = start_view_timestamp - (timestamp_length * 0.1);
+                    $scope.end_view_timestamp = end_view_timestamp + (timestamp_length * 0.1);
+                    $scope.timeline = timeline;
+            });
+        };
+
+        $scope.formData.submit();
     });
 
     function openEntityModal($modal, kind, id, timestamp) {
