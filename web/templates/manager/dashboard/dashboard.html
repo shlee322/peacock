@@ -1,72 +1,17 @@
 {% extends "manager/body.html" %}
 {% block js %}
 {{ super() }}
-<script src="/static/js/manager/dashboard.js"></script>
-
 <script type="application/javascript">
-// set up our data series with 150 random data points
-
-var seriesData = [ [], [], [], [], [], [], [], [], [] ];
-var random = new Rickshaw.Fixtures.RandomData(300);
-
-for (var i = 0; i < 300; i++) {
-	random.addData(seriesData);
-}
-
-var palette = new Rickshaw.Color.Palette( { scheme: 'classic9' } );
-
-var graph = new Rickshaw.Graph( {
-	element: document.getElementById("chart"),
-	width: 900,
-	height: 500,
-	renderer: 'scatterplot',
-	series: [
-		{
-			color: palette.color(),
-			data: seriesData[0],
-			name: 'Moscow'
-		}, {
-			color: palette.color(),
-			data: seriesData[1],
-			name: 'Shanghai'
-		}, {
-			color: palette.color(),
-			data: seriesData[2],
-			name: 'Amsterdam'
-		}, {
-			color: palette.color(),
-			data: seriesData[3],
-			name: 'Paris'
-		}, {
-			color: palette.color(),
-			data: seriesData[4],
-			name: 'Tokyo'
-		}, {
-			color: palette.color(),
-			data: seriesData[5],
-			name: 'London'
-		}, {
-			color: palette.color(),
-			data: seriesData[6],
-			name: 'New York'
-		}
-	]
-} );
-
-graph.render();
-
-var xAxis = new Rickshaw.Graph.Axis.Time({
-    graph: graph
-});
-
-xAxis.render();
-
-var yAxis = new Rickshaw.Graph.Axis.Y({
-    graph: graph
-});
-
-yAxis.render();
+var viewer_list = {
+    'test': {
+        'analyzer': 'test',
+        'type': 'plot',
+        'x': 'timestamp',
+        'y': 'timestamp_length'
+    }
+};
 </script>
+<script src="/static/js/manager/dashboard.js"></script>
 {% endblock %}
 {% block content %}
 <div class="container" ng-controller="dashboardController">

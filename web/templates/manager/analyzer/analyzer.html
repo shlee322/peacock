@@ -4,7 +4,7 @@
 <script src="/static/js/manager/analyzer.js"></script>
 {% endblock %}
 {% block content %}
-<div class="container">
+<div class="container"  ng-controller="addAnalyzerController">
 <h1 class="page-header">Analyzer <button type="button" class="btn btn-md btn-default" data-toggle="modal" data-target="#addAnalyzerModal">Add</button></h1>
     <div class="table-responsive">
         <table class="table table-hover">
@@ -18,7 +18,7 @@
             <tbody>
                 {% for analyzer in analyzers %}
                     <tr>
-                        <td>{{ analyzer.name }}</td>
+                        <td><a href="#" ng-click="view_analyzer('{{ analyzer.name }}')">{{ analyzer.name }}</a></td>
                         {% if analyzer.group.time != 0 %}
                         <td>{{ analyzer.group.time }}ms</td>
                         {% else %}
@@ -30,94 +30,94 @@
             </tbody>
         </table>
     </div>
-</div>
 
-{% raw %}
-<div id="addAnalyzerModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="addAnalyzerModalLabel" aria-hidden="true" ng-controller="addAnalyzerController">
-  <div class="modal-dialog modal-lg">
-    <div class="modal-content">
-      <div class="modal-header">
-        <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
-        <h4 class="modal-title" id="myModalLabel">Add Analyzer</h4>
-      </div>
-      <div class="modal-body">
-        <h4>Analyzer Name</h4>
-        <input type="text" class="form-control input-sm" placeholder="Analyzer Name" ng-model="addAnalyzer.name">
-        <h4>Input  <small>Event나 Analyzer를 입력으로 받을 수 있습니다.</small> <button class="btn btn-default btn-sm" ng-click="isAddEditView = !isAddEditView">view</button></h4>
-        <div collapse="isAddEditView">
-            <div class="panel panel-default">
-                <div class="panel-body">
-                    <form class="form-inline" role="form" ng-submit="addInputEvent.submit()">
-                        <div class="form-group">
-                            <div class="input-group">
-                                <div class="input-group-addon">Event</div>
-                                <input type="text" class="form-control input-sm" placeholder="Entity Kind" ng-model="addInputEvent.kind">
-                            </div>
-                        </div>
-                        <div class="form-group">
-                            <input type="text" class="form-control input-sm" placeholder="Event Name" ng-model="addInputEvent.id">
-                        </div>
-                        <button type="submit" class="btn btn-default btn-sm">Add</button>
-                    </form>
-                    <form class="form-inline" role="form" ng-submit="addInputAnalyzer.submit()">
-                        <div class="form-group">
-                            <div class="input-group">
-                                <div class="input-group-addon">Analyzer</div>
-                                <input type="text" class="form-control input-sm" placeholder="Analyzer Name" ng-model="addInputAnalyzer.name">
-                            </div>
-                        </div>
-                        <button type="submit" class="btn btn-default btn-sm">Add</button>
-                    </form>
-                </div>
-            </div>
-            <div class="row">
-                <div class="col-md-4" ng-repeat="item in inputList">
-                    <div class="panel panel-default">
-                      <div class="panel-heading" ng-if="item.type == 'event'"><span class="label label-success">event</span> `{{ item.kind }}`.`{{ item.id }}` Filter</div>
-                      <div class="panel-heading" ng-if="item.type == 'analyzer'"><span class="label label-primary">analyzer</span> `{{ item.name }}` Filter</div>
-                      <div class="panel-body">
-                          <textarea class="form-control" rows="3" placeholder="Lua Script - 결과가 true 경우 필터링됩니다"></textarea>
-                      </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <hr>
-        <form class="form-inline" role="form" ng-submit="addAnalyzer.submit()">
-            <h4>Group  <small>Input 된 데이터를 그룹핑합니다.</small> <button class="btn btn-default btn-sm" ng-click="isGroupView = !isGroupView">view</button></h4>
-            <div collapse="isGroupView">
+    {% raw %}
+    <div id="addAnalyzerModal" class="modal fade" tabindex="-1" role="dialog" aria-labelledby="addAnalyzerModalLabel" aria-hidden="true">
+      <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+          <div class="modal-header">
+            <button type="button" class="close" data-dismiss="modal"><span aria-hidden="true">&times;</span><span class="sr-only">Close</span></button>
+            <h4 class="modal-title" id="myModalLabel">Add Analyzer</h4>
+          </div>
+          <div class="modal-body">
+            <h4>Analyzer Name</h4>
+            <input type="text" class="form-control input-sm" placeholder="Analyzer Name" ng-model="addAnalyzer.name">
+            <h4>Input  <small>Event나 Analyzer를 입력으로 받을 수 있습니다.</small> <button class="btn btn-default btn-sm" ng-click="isAddEditView = !isAddEditView">view</button></h4>
+            <div collapse="isAddEditView">
                 <div class="panel panel-default">
                     <div class="panel-body">
-                        <div class="form-inline">
-                            <select class="form-control" ng-model="addAnalyzer.group_time">
-                                <option value="10">10ms</option>
-                                <option value="100">100ms</option>
-                                <option value="1000">초</option>
-                                <option value="60000">분</option>
-                                <option value="3600000">시</option>
-                                <option value="86400000">일</option>
-                                <option value="604800000">주</option>
-                                <option value="0">전체</option>
-                            </select>
-
+                        <form class="form-inline" role="form" ng-submit="addInputEvent.submit()">
                             <div class="form-group">
                                 <div class="input-group">
-                                    <div class="input-group-addon">Entity</div>
-                                    <input type="text" class="form-control input-sm" placeholder="Entity Kind" ng-model="addAnalyzer.group_entity_kind">
+                                    <div class="input-group-addon">Event</div>
+                                    <input type="text" class="form-control input-sm" placeholder="Entity Kind" ng-model="addInputEvent.kind">
                                 </div>
                             </div>
+                            <div class="form-group">
+                                <input type="text" class="form-control input-sm" placeholder="Event Name" ng-model="addInputEvent.id">
+                            </div>
+                            <button type="submit" class="btn btn-default btn-sm">Add</button>
+                        </form>
+                        <form class="form-inline" role="form" ng-submit="addInputAnalyzer.submit()">
+                            <div class="form-group">
+                                <div class="input-group">
+                                    <div class="input-group-addon">Analyzer</div>
+                                    <input type="text" class="form-control input-sm" placeholder="Analyzer Name" ng-model="addInputAnalyzer.name">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-default btn-sm">Add</button>
+                        </form>
+                    </div>
+                </div>
+                <div class="row">
+                    <div class="col-md-4" ng-repeat="item in inputList">
+                        <div class="panel panel-default">
+                          <div class="panel-heading" ng-if="item.type == 'event'"><span class="label label-success">event</span> `{{ item.kind }}`.`{{ item.id }}` Filter</div>
+                          <div class="panel-heading" ng-if="item.type == 'analyzer'"><span class="label label-primary">analyzer</span> `{{ item.name }}` Filter</div>
+                          <div class="panel-body">
+                          </div>
                         </div>
                     </div>
                 </div>
             </div>
             <hr>
-            <h4>Processor <small>실질적인 작업~~~~</small></h4>
-            <textarea class="form-control" rows="3" ng-model="addAnalyzer.processor_script"></textarea>
-            <button type="submit" class="btn btn-default  btn-block">Add</button>
-        </form>
+                <h4>Group  <small>Input 된 데이터를 그룹핑합니다.</small> <button class="btn btn-default btn-sm" ng-click="isGroupView = !isGroupView">view</button></h4>
+                <div collapse="isGroupView">
+                    <div class="panel panel-default">
+                        <div class="panel-body">
+                            <div class="form-inline">
+                                <select class="form-control" ng-model="addAnalyzer.group_time">
+                                    <option value="10">10ms</option>
+                                    <option value="100">100ms</option>
+                                    <option value="1000">초</option>
+                                    <option value="60000">분</option>
+                                    <option value="3600000">시</option>
+                                    <option value="86400000">일</option>
+                                    <option value="604800000">주</option>
+                                    <option value="0">전체</option>
+                                </select>
+
+                                <div class="form-group">
+                                    <div class="input-group">
+                                        <div class="input-group-addon">Entity</div>
+                                        <input type="text" class="form-control input-sm" placeholder="Entity Kind" ng-model="addAnalyzer.group_entity_kind">
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <hr>
+                <h4>Processor <small>실질적인 작업~~~~</small></h4>
+                <textarea class="form-control" rows="3" ng-model="addAnalyzer.processor_script"></textarea>
+                <form class="form-inline" role="form" ng-submit="addAnalyzer.submit()">
+                <button type="submit" class="btn btn-default  btn-block">Add</button>
+                </form>
+          </div>
+        </div>
       </div>
     </div>
-  </div>
+    {% endraw %}
 </div>
-{% endraw %}
+
 {% endblock %}

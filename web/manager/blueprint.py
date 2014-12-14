@@ -301,7 +301,7 @@ def manager_analyzer_ajax_get_analyzer(service_id):
 
     return jsonify({
         'status': 'succeeded',
-        'data':result.value
+        'data': result.value
     })
 
 

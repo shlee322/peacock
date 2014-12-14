@@ -20,7 +20,8 @@ def handler(websocket, path):
             break
 
         data = json.loads(message)
-        process_message(websocket, service_id, data)
+        yield from process_message(websocket, service_id, data)
+
 
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
