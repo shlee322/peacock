@@ -1,24 +1,30 @@
 {% extends "manager/body.html" %}
+
+{% block content %}
+<div class="container">
+    <div id="chart_container">
+        <div id="chart"></div>
+    </div>
+</div>
+{% endblock %}
+
 {% block js %}
 {{ super() }}
-<script type="application/javascript">
-var viewer_list = {
-    'test': {
-        'analyzer': 'test',
-        'type': 'plot',
-        'x': 'timestamp',
-        'y': 'timestamp_length'
-    }
-};
-</script>
 <script src="/static/js/manager/dashboard.js"></script>
-{% endblock %}
-{% block content %}
-<div class="container" ng-controller="dashboardController">
-<div id="chart_container">
-    <div id="chart"></div>
-    <div id="timeline"></div>
-    <div id="preview"></div>
-</div>
-</div>
+<script type="application/javascript">
+    socket.onopen = function() {
+        add_plot_graph('chart', 800, 200, 'test', function(obj) {
+            if(obj.timestamp_length < 0) {
+                obj.timestamp += obj.timestamp_length;
+                obj.timestamp_length *= -1;
+            }
+
+            return {
+                'x': obj.timestamp,
+                'y': obj.timestamp_length,
+                'entity': obj.entity
+            };
+        });
+    };
+</script>
 {% endblock %}

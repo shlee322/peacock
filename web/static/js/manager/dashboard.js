@@ -1,65 +1,74 @@
-peacock.config(function(WebSocketProvider){
-    WebSocketProvider
-      .prefix('')
-      .uri("ws://localhost:7000/" + service_id);
-});
+var socket = new WebSocket('ws://' + location.hostname + ':7000/' + service_id);
+var subscribe_list = {};
 
-peacock.controller('dashboardController', function($scope, $filter, $modal, $http, WebSocket) {
-    var test = [];
-    test.push({
+socket.onmessage = function (data) {
+    var message = JSON.parse(data.data);
+
+
+    if(!subscribe_list[message.analyzer_name]) return;
+
+    var list = subscribe_list[message.analyzer_name];
+
+    var data_list = message.data.data;
+    for(var i in list) {
+        var graph = list[i];
+
+        for(var data_i in data_list) {
+            graph.series.push(graph.func(data_list[data_i]));
+        }
+
+        graph.graph.update();
+    }
+};
+
+function add_plot_graph(id, width, height, analyzer_name, func) {
+    if(!subscribe_list[analyzer_name]) {
+        subscribe_list[analyzer_name] = []
+    }
+
+
+    var element = document.getElementById(id);
+
+    var series = [];
+
+    var graph = new Rickshaw.Graph( {
+        element: element,
+        width: width,
+        height: height,
+        renderer: 'scatterplot',
+        series: [{
+            color: 'steelblue',
+            data: series
+        }]
+    });
+
+    subscribe_list[analyzer_name].push({
+        'graph': graph,
+        'series': series,
+        'func': func
+    });
+
+    graph.render();
+
+    socket.send(JSON.stringify({
         'type': 'subscribe',
-        'viewer_id': 'aaaa',
         'target': {
-            'type': 'event',
-            'entity_kind': 'response',
-            'event_name': 'response',
+            'analyzer_name': analyzer_name,
             'timestamp': {
                 'start': new Date().getTime() - 10*60*1000
             }
         }
+    }));
+
+    var xAxis = new Rickshaw.Graph.Axis.Time({
+        graph: graph
     });
 
-    WebSocket.onmessage(function(event) {
-        var message = JSON.parse(event.data);
-        if(message.type == 'subscribe_message') {
+    xAxis.render();
 
-        }
+    var yAxis = new Rickshaw.Graph.Axis.Y({
+        graph: graph
     });
 
-    WebSocket.onopen(function() {
-        for(var i in test) {
-            WebSocket.send(JSON.stringify(test[i]));
-        }
-    });
-
-    /*
-var seriesData = [ [], [], [], [], [], [], [], [], [] ];
-var random = new Rickshaw.Fixtures.RandomData(300);
-
-for (var i = 0; i < 300; i++) {
-	random.addData(seriesData);
+    yAxis.render();
 }
-
-var palette = new Rickshaw.Color.Palette( { scheme: 'classic9' } );
-
-var graph = new Rickshaw.Graph( {
-	element: document.getElementById("chart"),
-	width: 900,
-	height: 500,
-	renderer: 'scatterplot',
-} );
-
-graph.render();
-
-var xAxis = new Rickshaw.Graph.Axis.Time({
-    graph: graph
-});
-
-xAxis.render();
-
-var yAxis = new Rickshaw.Graph.Axis.Y({
-    graph: graph
-});
-
-yAxis.render();*/
-});

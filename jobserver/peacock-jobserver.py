@@ -27,9 +27,13 @@ def init_jobserver():
     mq_connection = yield from asynqp.connect('localhost', 5672, username='guest', password='guest')
     mq_channel = yield from mq_connection.open_channel()
 
-    from jobserver.messagequeue import set_exchange
+    from jobserver.messagequeue import set_exchange, set_monitor_queue
     exchange = yield from mq_channel.declare_exchange('peacock_job.exchange', 'direct')
+    monitor_queue = yield from mq_channel.declare_exchange('monitor_queue', 'topic')
     set_exchange(exchange)
+    set_monitor_queue(monitor_queue)
+
+
 
 
 @asyncio.coroutine
@@ -99,7 +103,7 @@ def job_node_watch(nodes):
     logging.info("node_start_queue_id = %d, node_end_queue_id = %d" % (node_start_queue_id, node_end_queue_id))
 
     # 큐 처리
-    for i in range(node_start_queue_id, node_end_queue_id):
+    for i in range(node_start_queue_id, node_end_queue_id + 1):
         if not jobs.get(i):
             jobs[i] = job_node_processor(i)
             asyncio.async(jobs[i], loop=loop)

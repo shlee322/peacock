@@ -23,14 +23,19 @@ def process_analyzer_group(message):
     result_key = "%s_%s_%s_%s" % (analyzer['service']['id'], message['analyzer_id'],
                                   message['group'][0], message['group'][1])
 
-    database.analyzer_result_db.upsert(result_key, {
+    data = {
         'service': analyzer['service'],
         'analyzer_id': message['analyzer_id'],
         'group': message['group'],
         'data': group_result
-    })
+    }
 
-    # TODO : 이제 다시 인풋으로
+    database.analyzer_result_db.upsert(result_key, data)
+
+    import asynqp
+    import msgpack
+    from jobserver.messagequeue import get_monitor_queue
+    get_monitor_queue().publish(asynqp.Message(msgpack.packb(data)), message['analyzer_id'])
 
 
 def _count(input_data):
