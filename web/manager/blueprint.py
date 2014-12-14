@@ -267,11 +267,46 @@ def manager_service_analyzer(service_id):
     service_name = get_service_name(service_id)
     menus = get_menus('analyzer')
 
+    from couchbase.bucket import Bucket as CouchbaseBucket
+    from couchbase.views.iterator import View, Query
+
+    analyzer_db = CouchbaseBucket('couchbase://localhost/analyzers')
+
+    query = Query(
+        inclusive_end=True,
+        mapkey_range=[
+            [service_id, ],
+            [service_id, Query.STRING_RANGE_END]
+        ],
+        limit=100000000
+    )
+
+    view = View(analyzer_db, "analyzers", "analyzer_list", query=query)
+    analyzers = []
+    for result in view:
+        analyzers.append(result.value)
+
     return render_template('manager/analyzer/analyzer.html', **locals())
 
 
-@blueprint.route('/manager/<service_id>/analyzer/_ajax/add_analyzer', methods=['POST'])
-def manager_analyzer_ajax_add_analyzer(service_id):
+@blueprint.route('/manager/<service_id>/analyzer/_ajax/get_analyzer')
+def manager_analyzer_ajax_get_analyzer(service_id):
+    name = request.args.get('name')
+
+    from couchbase.bucket import Bucket as CouchbaseBucket
+    analyzer_db = CouchbaseBucket('couchbase://localhost/analyzers')
+    import hashlib
+    analyzer_key = hashlib.sha256(("%s_%s" % (service_id, name)).encode('utf8')).hexdigest()
+    result = analyzer_db.get(analyzer_key)
+
+    return jsonify({
+        'status': 'succeeded',
+        'data':result.value
+    })
+
+
+@blueprint.route('/manager/<service_id>/analyzer/_ajax/set_analyzer', methods=['POST'])
+def manager_analyzer_ajax_set_analyzer(service_id):
     data = request.get_json()
 
     data['service'] = {
@@ -282,7 +317,7 @@ def manager_analyzer_ajax_add_analyzer(service_id):
     analyzer_db = CouchbaseBucket('couchbase://localhost/analyzers')
     import hashlib
     analyzer_key = hashlib.sha256(("%s_%s" % (service_id, data['name'])).encode('utf8')).hexdigest()
-    analyzer_db.insert(analyzer_key, data)
+    analyzer_db.upsert(analyzer_key, data)
 
     return jsonify({
         'status': 'succeeded'

@@ -1,3 +1,4 @@
+import logging
 import asyncio
 import aiozmq
 import msgpack
@@ -73,7 +74,8 @@ class LoggerZmqProtocol(aiozmq.ZmqProtocol):
                 log_data['target'] = temp
                 log_data['log_key'] = get_log_key()
                 self.publish_mq(log_data)
-        except:
+        except Exception as e:
+            logging.exception(e)
             return 'fail'.encode('utf8')
 
         return 'ok'.encode('utf8')
@@ -93,7 +95,25 @@ def init_logger():
         bind='tcp://%s' % BIND_ADDRESS)
 
 
+def set_python_logger():
+    """
+    파이썬 로거 셋팅
+    """
+    import sys
+
+    root = logging.getLogger()
+    root.setLevel(logging.DEBUG)
+
+    ch = logging.StreamHandler(sys.stdout)
+    ch.setLevel(logging.INFO)
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+    ch.setFormatter(formatter)
+    root.addHandler(ch)
+
+
 if __name__ == '__main__':
+    set_python_logger()
+
     # 주키퍼에 등록
     from config import ZOOKEEPER_HOST, BIND_ADDRESS
     zk = KazooClient(hosts=ZOOKEEPER_HOST)

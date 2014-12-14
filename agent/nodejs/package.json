@@ -2,6 +2,7 @@
   "name": "peacock-agent-nodejs",
   "version": "0.0.1",
   "private": true,
+  "main": "peacock",
   "dependencies": {
     "request": "2.49.0",
     "node-rsa": "0.2.12",

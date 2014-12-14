@@ -10,12 +10,23 @@
         <table class="table table-hover">
             <thead>
                 <tr>
-                    <th width="120px">Name</th>
-                    <th width="80px">Comment</th>
-                    <th width="100px">Author</th>
+                    <th width="*">Name</th>
+                    <th width="160px">Group Time</th>
+                    <th width="160px">Group Kind</th>
                 </tr>
             </thead>
             <tbody>
+                {% for analyzer in analyzers %}
+                    <tr>
+                        <td>{{ analyzer.name }}</td>
+                        {% if analyzer.group.time != 0 %}
+                        <td>{{ analyzer.group.time }}ms</td>
+                        {% else %}
+                        <td>ALL</td>
+                        {% endif %}
+                        <td>{{ analyzer.group.entity_kind }}</td>
+                    </tr>
+                {% endfor %}
             </tbody>
         </table>
     </div>
@@ -79,13 +90,14 @@
                     <div class="panel-body">
                         <div class="form-inline">
                             <select class="form-control" ng-model="addAnalyzer.group_time">
-                                <option value="0">없음</option>
+                                <option value="10">10ms</option>
+                                <option value="100">100ms</option>
                                 <option value="1000">초</option>
                                 <option value="60000">분</option>
                                 <option value="3600000">시</option>
                                 <option value="86400000">일</option>
                                 <option value="604800000">주</option>
-                                <option value="-1">전체</option>
+                                <option value="0">전체</option>
                             </select>
 
                             <div class="form-group">
