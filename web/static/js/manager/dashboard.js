@@ -1,28 +1,5 @@
 var socket = new WebSocket('ws://' + location.hostname + ':7000/' + service_id);
 var subscribe_list = {};
-/*
-setInterval(function() {
-    var now =  new Date().getTime()/1000;
-    for(var name in subscribe_list){
-        var subscribe = subscribe_list[name];
-        for(var i in subscribe) {
-            var graph = subscribe[i];
-            /*
-            graph.graph.series[0].data.push({
-                'x': now,
-                'y': -1
-            });
-//*
-            graph.graph.series[0].data = jQuery.grep(graph.graph.series[0].data, function(value) {
-                return (now-600) < value.x;
-            });
-
-            graph.graph.update();
-        }
-    }
-}, 1000);
-*/
-
 
 socket.onmessage = function (data) {
     var message = JSON.parse(data.data);
@@ -71,108 +48,22 @@ function add_subscribe(analyzer_name, func, start, end) {
     }));
 }
 
-/*
-function add_bar_graph(id, width, height, analyzer_name, series, func) {
-    var element = document.getElementById(id);
-/*
+function show_graph(config) {
+    var element = document.getElementById(config.element);
     var graph = new Rickshaw.Graph( {
         element: element,
-        width: width,
-        height: height,
-        renderer: 'bar',
-        series: []
+        width: config.width,
+        height: config.height,
+        renderer: config.renderer,
+        series: config.series
     });
-
     graph.render();
-
-    add_subscribe('damage', function(subscribe, group){
-        console.log(subscribe);
-    }, new Date().getTime() - 3600000, null);
-}
-
-
-
-
-/*
-if(!subscribe_list[message.analyzer_name]) return;
-
-var list = subscribe_list[message.analyzer_name];
-
-var data_list = message.data.data;
-for(var i in list) {
-    var graph = list[i];
-
-    for(var data_i in data_list) {
-        var data = graph.func(data_list[data_i]);
-        graph.graph.series[data.type].data.push(data);
-    }
-
-    graph.graph.update();
-}
-*/
-
-/*
-function add_plot_graph(id, width, height, analyzer_name, series, func) {
-    add_graph('scatterplot', id, width, height, analyzer_name, series, func);
-}
-
-function add_line_graph(id, width, height, analyzer_name, series, func) {
-    add_graph('line', id, width, height, analyzer_name, series, func);
-}
-
-
-function add_graph(type, id, width, height, analyzer_name, series, func) {
-    if(!subscribe_list[analyzer_name]) {
-        subscribe_list[analyzer_name] = []
-    }
-
-
-    var element = document.getElementById(id);
-
-    var now =  new Date().getTime()/1000;/*
-    for(var i=600; i>=0; i--) {
-        series.push({
-            'x': now-i,
-            'y': -1
-        })
-    }
-    series.push({
-        'x': now,
-        'y': 0
-    });
-*/
-/*
-    var graph = new Rickshaw.Graph( {
-        element: element,
-        width: width,
-        height: height,
-        renderer: type,
-        series: series
-    });
-
-    subscribe_list[analyzer_name].push({
-        'graph': graph,
-        'func': func
-    });
-
-    graph.render();
-
-    socket.send(JSON.stringify({
-        'type': 'subscribe',
-        'target': {
-            'analyzer_name': analyzer_name,
-            'timestamp': {
-                'start': new Date().getTime() - 10*60*1000
-            }
-        }
-    }));
 
     var time = new Rickshaw.Fixtures.Time();
-    var seconds = time.unit('15 second');
 
     var xAxis = new Rickshaw.Graph.Axis.Time({
         graph: graph,
-        timeUnit: seconds
+        timeUnit: time.unit(config.x_time)
     });
 
     xAxis.render();
@@ -184,10 +75,59 @@ function add_graph(type, id, width, height, analyzer_name, series, func) {
     yAxis.render();
 
     var hoverDetail = new Rickshaw.Graph.HoverDetail( {
-        graph: graph,
-        onShow: function(event){
-
-        }
+        graph: graph
     } );
+
+    var update_graph = function(){
+        var start_time = new Date().getTime() - config.range;
+
+        var subscribe = get_subscribe(config.analyzer_name);
+
+        var temp = {};
+        graph.series[0].data = [];
+        for(var name in subscribe.data) {
+            var obj = subscribe.data[name];
+            temp[obj.group[0]] = true;
+
+            var result = config.func(obj);
+            if(!result) continue;
+
+            graph.series[result.type].data.push({
+                x:obj.group[result.type]/1000,
+                y:obj.data,
+                xFormatter: function(x) { return "load"; },
+                yFormatter: function(y) { return y.toString(); }
+            });
+        }
+
+        var test = Math.floor(new Date().getTime()/config.group) * config.group;
+        var chart_start_time = Math.floor(start_time/config.group) * config.group;
+
+        for(var time=chart_start_time; time<=test; time+=config.group) {
+            if(!temp[time]) {
+                graph.series[0].data.push({
+                    x:time/1000,
+                    y:0
+                });
+            }
+        }
+
+        for(var i=0; i<graph.series.length; i++) {
+            graph.series[i].data = jQuery.grep(graph.series[i].data, function (obj) {
+                return start_time < obj.x*1000;
+            });
+            graph.series[i].data.sort(function (a, b){
+                return a.x - b.x;
+            });
+        }
+
+        graph.update();
+    };
+
+    add_subscribe(config.analyzer_name, function(subscribe, group){
+        update_graph();
+    }, new Date().getTime() - config.range, null);
+
+    setInterval(update_graph, config.group);
+    update_graph();
 }
-*/

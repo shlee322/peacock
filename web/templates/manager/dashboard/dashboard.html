@@ -5,6 +5,7 @@
     <div id="chart_container">
         <h5>Mob Damage</h5>
         <div id="chart"></div>
+        <h5>CPU Load</h5>
         <div id="chart2"></div>
     </div>
 </div>
@@ -15,10 +16,9 @@
 <script src="/static/js/manager/dashboard.js"></script>
 <script type="application/javascript">
 socket.onopen = function() {
-    //Mob Count
-    var element = document.getElementById('chart');
-    var graph = new Rickshaw.Graph( {
-        element: element,
+    show_graph({
+        analyzer_name:'damage',
+        element:'chart',
         width: 800,
         height: 200,
         renderer: 'bar',
@@ -26,77 +26,23 @@ socket.onopen = function() {
             color: 'steelblue',
             name:'count',
             data: []
-        }]
-    });
-    graph.render();
+        }],
 
-    var time = new Rickshaw.Fixtures.Time();
+        x_time:'15 minute',
+        range:3600000,
+        group:60000,
 
-    var xAxis = new Rickshaw.Graph.Axis.Time({
-        graph: graph,
-        timeUnit: time.unit('15 minute')
-    });
-
-    xAxis.render();
-
-    var yAxis = new Rickshaw.Graph.Axis.Y({
-        graph: graph
-    });
-
-    yAxis.render();
-
-    var hoverDetail = new Rickshaw.Graph.HoverDetail( {
-        graph: graph
-    } );
-
-    var start_time = new Date().getTime() - 3600000;
-
-    add_subscribe('damage', function(subscribe, group){
-        update_damage();
-    }, start_time, null);
-
-    var update_damage = function(){
-        var subscribe = get_subscribe('damage');
-
-        graph.series[0].data = [];
-        for(var name in subscribe.data) {
-            var obj = subscribe.data[name];
-            graph.series[0].data.push({
-                x:obj.group[0]/1000,
-                y:obj.data,
-                xFormatter: function(x) { return "count"; },
-                yFormatter: function(y) { return y.toString(); }
-            });
-        }
-
-        var test = Math.floor(new Date().getTime()/60000) * 60000;
-        var chart_start_time = Math.floor(start_time/60000) * 60000;
-
-        for(var time=chart_start_time; time<=test; time+=60000) {
-            if(!subscribe.data[time+'_']) {
-                graph.series[0].data.push({
-                    x:time/1000,
-                    y:0
-                });
+        func:function(obj) {
+            return {
+                'type': 0,
+                'data': obj.data
             }
         }
+    });
 
-        graph.series[0].data.sort(function (a, b){
-            return a.x - b.x;
-        });
-
-        graph.update();
-    };
-
-    setInterval(update_damage, 30000);
-
-
-
-
-    //CPU
-    var element2 = document.getElementById('chart2');
-    var graph2 = new Rickshaw.Graph( {
-        element: element2,
+    show_graph({
+        analyzer_name:'cpu_state',
+        element:'chart2',
         width: 800,
         height: 200,
         renderer: 'line',
@@ -104,72 +50,20 @@ socket.onopen = function() {
             color: 'steelblue',
             name:'count',
             data: []
-        }]
-    });
-    graph2.render();
+        }],
 
-    var time2 = new Rickshaw.Fixtures.Time();
+        x_time:'15 minute',
+        range:300000,
+        group:5000,
 
-    var xAxis2 = new Rickshaw.Graph.Axis.Time({
-        graph: graph2,
-        timeUnit: time.unit('15 minute')
-    });
-
-    xAxis2.render();
-
-    var yAxis2 = new Rickshaw.Graph.Axis.Y({
-        graph: graph2
-    });
-
-    yAxis2.render();
-
-    var hoverDetail2 = new Rickshaw.Graph.HoverDetail( {
-        graph: graph2
-    } );
-
-    var start_time2 = new Date().getTime() - 300000;
-
-    add_subscribe('cpu_state', function(subscribe, group){
-        update_cpu();
-    }, start_time2, null);
-
-    var update_cpu = function(){
-        var subscribe = get_subscribe('cpu_state');
-
-        var temp = {};
-        graph2.series[0].data = [];
-        for(var name in subscribe.data) {
-            var obj = subscribe.data[name];
-            temp[obj.group[0]/1000] = true;
-            if(typeof(obj.data) != 'number') continue;
-            graph2.series[0].data.push({
-                x:obj.group[0]/1000,
-                y:obj.data,
-                xFormatter: function(x) { return "load"; },
-                yFormatter: function(y) { return y.toString(); }
-            });
-        }
-
-        var test = Math.floor(new Date().getTime()/60000) * 60000;
-        var chart_start_time = Math.floor(start_time2/60000) * 60000;
-
-        for(var time=chart_start_time; time<=test; time+=60000) {
-            if(!temp[time/1000]) {
-                graph2.series[0].data.push({
-                    x:time/1000,
-                    y:0
-                });
+        func:function(obj) {
+            if(typeof(obj.data) != 'number') return null;
+            return {
+                'type': 0,
+                'data': obj.data
             }
         }
-
-        graph2.series[0].data.sort(function (a, b){
-            return a.x - b.x;
-        });
-
-        graph2.update();
-    };
-
-    setInterval(update_cpu, 30000);
+    });
 };
 </script>
 {% endblock %}
