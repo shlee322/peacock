@@ -52,7 +52,18 @@ def main_auth():
         })
 
     # 세션 DB에 등록
-    
+    from web.database import server_token_db
+    from Crypto import Random
+    import codecs
+
+    token = codecs.encode(Random.new().read(32), 'hex_codec').decode('utf8')
+    server_token_db.set(token, {
+        'service': {
+            'id': service_id
+        },
+        'server': server_key_id,
+        'key': data.get('key')
+    })
 
     nodes = []
 
@@ -69,7 +80,7 @@ def main_auth():
     return jsonify({
         'status': 'succeeded',
         'data': {
-            'token': 'kr-elab-test',
+            'token': token,
             'logger': {
                 'zmq': nodes
             }

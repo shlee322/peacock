@@ -205,3 +205,17 @@ Simple Document
    }
 }
 ```
+
+[Data Bucket] server_token
+
+Simple Document
+
+```json
+{
+  "server": "test_key",
+  "key": "e31e39364cb09a86f8d42929a5d0c641",
+  "service": {
+    "id": "kr-elab-test"
+  }
+}
+```

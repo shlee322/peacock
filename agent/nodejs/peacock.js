@@ -1,7 +1,7 @@
 var AUTH_URL = 'http://localhost:5000/auth';
 
 var TOKEN = null;
-var CIPHER = null;
+var AES_KEY = null;
 
 var crypto = require('crypto');
 var request = require('request');
@@ -20,11 +20,9 @@ function initPeacock(config, cb) {
 
         var rsa_key = new NodeRSA(data);
 
-        var aes_key = crypto.randomBytes(16).toString('hex');
-        var aes_iv = crypto.randomBytes(8).toString('hex');
-        CIPHER = crypto.createCipheriv('aes-256-cbc', aes_key, aes_iv);
+        AES_KEY = crypto.randomBytes(32);
 
-        var sign = rsa_key.sign(aes_key, 'hex', 'hex');
+        var sign = rsa_key.sign(AES_KEY.toString('hex'), 'hex', 'hex');
 
         var options = {
             uri: AUTH_URL,
@@ -34,8 +32,7 @@ function initPeacock(config, cb) {
                 'server_key_id': config.server_key_id,
                 'sign': sign,
                 'crypto': 'aes256',
-                'key': aes_key,
-                'iv': aes_iv,
+                'key': AES_KEY.toString('hex'),
                 'mode': 'cbc'
             }
         };
@@ -71,7 +68,13 @@ function connect_logger(servers, cb) {
 }
 
 function send_data(obj) {
-    var data = [TOKEN, msgpack.pack(obj)];
+    var aes_iv = crypto.randomBytes(16);
+    var cipher = crypto.createCipheriv('aes-256-cbc', AES_KEY, aes_iv);
+
+    var objdata = msgpack.pack(obj);
+    var buffer = [cipher.update(objdata), cipher.final()];
+
+    var data = [TOKEN, aes_iv.toString('hex'), objdata.length, Buffer.concat(buffer)];
     sock.send(msgpack.pack(data));
 }
 

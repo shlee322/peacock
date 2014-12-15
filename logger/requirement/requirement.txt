@@ -3,3 +3,4 @@ msgpack-python==0.4.2
 asynqp==0.3
 couchbase
 kazoo
+Crypto

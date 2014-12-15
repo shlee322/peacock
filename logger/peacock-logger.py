@@ -59,10 +59,24 @@ class LoggerZmqProtocol(aiozmq.ZmqProtocol):
         try:
             data = msgpack.unpackb(data)
 
-            log_data = msgpack.unpackb(data[1], encoding='utf-8')
+            from logger.database import server_token_db
+            token = data[0].decode('utf8')
+            token_obj = server_token_db.get(token)
+
+            import binascii
+            from Crypto.Cipher import AES
+            service_id = token_obj.value['service']['id']
+            iv = binascii.unhexlify(data[1].decode('utf-8'))
+
+            aes_key = binascii.unhexlify(token_obj.value['key'])
+
+            aes = AES.new(aes_key, AES.MODE_CBC, iv)
+
+            decrypt_data = aes.decrypt(data[3])[:data[2]]
+            log_data = msgpack.unpackb(decrypt_data, encoding='utf-8')
 
             log_data['service'] = {
-                'id': data[0].decode('utf8')
+                'id': service_id
             }
 
             log_data['log_key'] = get_log_key()
