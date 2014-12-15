@@ -64,7 +64,7 @@ def job_node_processor(node_index):
 
         # TODO : 메시지가 없는 경우 블럭
         if not message:
-            yield from asyncio.sleep(0.2)
+            yield from asyncio.sleep(0.1)
             continue
 
         try:

@@ -42,7 +42,7 @@ def update_entity_analyzer(analyzer_id, analyzer, event):
         else:     # 전체를 하나로
             group_time = 0
 
-        if not analyzer['group'].get('entity_kind'):
+        if not analyzer['group'].get('entity_kind') or analyzer['group'].get('entity_kind') == '':
             groups.append((group_time, ''))
         else:
             if analyzer['group']['entity_kind'] == event['entity']['kind']:

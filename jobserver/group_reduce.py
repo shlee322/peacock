@@ -32,10 +32,13 @@ def process_analyzer_group(message):
 
     database.analyzer_result_db.upsert(result_key, data)
 
-    import asynqp
-    import msgpack
-    from jobserver.messagequeue import get_monitor_queue
-    get_monitor_queue().publish(asynqp.Message(msgpack.packb(data)), message['analyzer_id'])
+    try:
+        import asynqp
+        import msgpack
+        from jobserver.messagequeue import get_monitor_queue
+        get_monitor_queue().publish(asynqp.Message(msgpack.packb(data)), message['analyzer_id'])
+    except:     # 전송 실패 무시
+        pass
 
 
 def _count(input_data):

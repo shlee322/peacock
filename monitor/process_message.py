@@ -49,6 +49,8 @@ class Handler:
                 logging.exception(e)
                 message.reject()
 
+        yield from self.queue.delete()
+
     @asyncio.coroutine
     def process_message(self, message):
         if message['type'] == 'subscribe':

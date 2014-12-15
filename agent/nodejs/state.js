@@ -1,5 +1,7 @@
 var os = require('os');
 var peacock = require('./peacock.js');
+var libCpuUsage = require('cpu-usage');
+
 
 var options = {
   'key_file': __dirname + '/test_private.pem',
@@ -13,33 +15,21 @@ peacock.init(options, function(err){
     return;
   }
 
-  var server_entity = new peacock.Entity('server', 'test_server_1');
-
-  var cpus = os.cpus();
-  for(var i=0; i<cpus.length; i++) {
-      var cpu_entity = new peacock.Entity('cpu_state', 'test_server_1_cpu_' + i);
-      cpu_entity.link(server_entity);
-  }
-  var mem_entity = new peacock.Entity('mem_state', 'test_server_1');
-  mem_entity.link(server_entity);
+  var server_entity = new peacock.Entity('server_state', 'test_server_1');
 
   var last_time = new Date();
 
-  setInterval(function (){
+  libCpuUsage(5000, function(load) {
     var now_time = new Date();
-    var cpus = os.cpus();
-    for(var i=0; i<cpus.length; i++) {
-      var cpu_entity = new peacock.Entity('cpu_state', 'test_server_1_cpu_' + i);
-      cpu_entity.event('cpu_state', cpus[i].times, now_time, last_time);
-    }
 
-    mem_entity.event('mem_state', {
+    server_entity.event('cpu', load, now_time, last_time); 
+    server_entity.event('memory', {
       'total':os.totalmem(),
       'free':os.freemem()
     }, now_time, last_time);
 
     last_time = now_time;
-  }, 5000);
+  });
 });
 
 console.log('Server running at http://127.0.0.1:8080/');
