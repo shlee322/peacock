@@ -2,11 +2,33 @@
 
 {% block content %}
 <div class="container">
-    <div id="chart_container">
-        <h5>Mob Damage</h5>
-        <div id="chart"></div>
-        <h5>CPU Load</h5>
-        <div id="chart2"></div>
+    <h1 class="page-header">Dashboard</h1>
+    <div class="row">
+      <div class="col-md-5">
+        <div class="panel panel-default">
+          <div class="panel-heading">Mob Damage</div>
+          <div class="panel-body">
+            <div id="chart"></div>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-offset-1 col-md-5">
+        <div class="panel panel-default">
+          <div class="panel-heading">CPU Load</div>
+          <div class="panel-body">
+            <div id="chart2"></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="col-md-offset-1 col-md-5">
+        <div class="panel panel-default">
+          <div class="panel-heading">Memory</div>
+          <div class="panel-body">
+            <div id="chart3"></div>
+          </div>
+        </div>
+      </div>
     </div>
 </div>
 {% endblock %}
@@ -19,7 +41,7 @@ socket.onopen = function() {
     show_graph({
         analyzer_name:'damage',
         element:'chart',
-        width: 800,
+        width: 400,
         height: 200,
         renderer: 'bar',
         series: [{
@@ -43,7 +65,7 @@ socket.onopen = function() {
     show_graph({
         analyzer_name:'cpu_state',
         element:'chart2',
-        width: 800,
+        width: 400,
         height: 200,
         renderer: 'line',
         series: [{
@@ -58,6 +80,33 @@ socket.onopen = function() {
 
         func:function(obj) {
             if(typeof(obj.data) != 'number') return null;
+            return {
+                'type': 0,
+                'data': obj.data
+            }
+        }
+    });
+
+    show_graph({
+        analyzer_name:'memory',
+        element:'chart3',
+        width: 400,
+        height: 200,
+        renderer: 'line',
+        series: [{
+            color: 'steelblue',
+            name:'use',
+            data: []
+        }],
+
+        x_time:'15 minute',
+        y_format:'kmbt',
+        range:300000,
+        group:5000,
+
+        func:function(obj) {
+            if(typeof(obj.data) != 'number') return null;
+            console.log(obj);
             return {
                 'type': 0,
                 'data': obj.data

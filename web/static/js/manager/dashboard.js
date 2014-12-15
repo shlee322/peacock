@@ -68,9 +68,17 @@ function show_graph(config) {
 
     xAxis.render();
 
-    var yAxis = new Rickshaw.Graph.Axis.Y({
-        graph: graph
-    });
+    var yAxis = null;
+    if(config.y_format == 'kmbt') {
+        yAxis = new Rickshaw.Graph.Axis.Y({
+            graph: graph,
+            tickFormat: Rickshaw.Fixtures.Number.formatKMBT
+        });
+    } else{
+        yAxis = new Rickshaw.Graph.Axis.Y({
+            graph: graph
+        });
+    }
 
     yAxis.render();
 
