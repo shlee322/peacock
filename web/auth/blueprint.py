@@ -36,12 +36,23 @@ def main_auth():
     key = binascii.unhexlify(data.get('key'))
     sign = binascii.unhexlify(data.get('sign'))
 
+    from Crypto.Hash import SHA256
     from Crypto.PublicKey import RSA
+    from Crypto.Signature import PKCS1_v1_5
 
     public_key = RSA.importKey(public_key)
 
-    import hashlib
-    print(public_key.verify(hashlib.sha256(key).digest(), sign))
+    h = SHA256.new(key)
+    verifier = PKCS1_v1_5.new(public_key)
+
+    if not verifier.verify(h, sign):
+        return jsonify({
+            'status': 'failed',
+            'message': '해당 서버 키가 존재하지 않습니다'
+        })
+
+    # 세션 DB에 등록
+    
 
     nodes = []
 
