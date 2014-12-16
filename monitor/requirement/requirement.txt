@@ -1,2 +1,4 @@
 websockets==2.3
-couchbase
+couchbase==1.2.4
+msgpack-python==0.4.2
+asynqp==0.3

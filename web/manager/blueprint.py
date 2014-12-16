@@ -137,10 +137,10 @@ def manager_service_eventviewer(service_id):
 @blueprint.route('/manager/<service_id>/eventviewer/_ajax/get_event_list')
 def manager_service_eventviwer_get_event_list(service_id):
     import json
-    from couchbase.bucket import Bucket as CouchbaseBucket
     from couchbase.views.iterator import View, Query
 
-    log_db = CouchbaseBucket('couchbase://localhost/events')
+    from web.database import event_db
+    log_db = event_db
 
     timestamp = int(request.args['timestamp'])
 
@@ -188,11 +188,10 @@ def manager_service_eventviwer_get_entity_timeline(service_id):
     start_timestamp = int(request.args['start_timestamp'])
     end_timestamp = int(request.args['end_timestamp'])
 
-    from couchbase.bucket import Bucket as CouchbaseBucket
     from couchbase.views.iterator import View, Query
 
-    log_db = CouchbaseBucket('couchbase://localhost/events')
-    link_db = CouchbaseBucket('couchbase://localhost/links')
+    from web.database import event_db, link_db
+    log_db = event_db
 
     q = Query(
         mapkey_range=[
@@ -251,9 +250,8 @@ def manager_service_eventviwer_get_entity_timeline(service_id):
 @blueprint.route('/manager/<service_id>/eventviewer/_ajax/get_event_data')
 def manager_service_eventviwer_get_event_data(service_id):
     id = request.args['id']
-    from couchbase.bucket import Bucket as CouchbaseBucket
-    log_db = CouchbaseBucket('couchbase://localhost/events')
-    data = log_db.get(id)
+    from web.database import event_db
+    data = event_db.get(id)
     return jsonify({
         'status': 'succeeded',
         'data': data.value['data']
@@ -269,8 +267,7 @@ def manager_service_analyzer(service_id):
 
     from couchbase.bucket import Bucket as CouchbaseBucket
     from couchbase.views.iterator import View, Query
-
-    analyzer_db = CouchbaseBucket('couchbase://localhost/analyzers')
+    from web.database import analyzer_db
 
     query = Query(
         inclusive_end=True,
@@ -293,8 +290,7 @@ def manager_service_analyzer(service_id):
 def manager_analyzer_ajax_get_analyzer(service_id):
     name = request.args.get('name')
 
-    from couchbase.bucket import Bucket as CouchbaseBucket
-    analyzer_db = CouchbaseBucket('couchbase://localhost/analyzers')
+    from web.database import analyzer_db
     import hashlib
     analyzer_key = hashlib.sha256(("%s_%s" % (service_id, name)).encode('utf8')).hexdigest()
     result = analyzer_db.get(analyzer_key)
@@ -313,8 +309,7 @@ def manager_analyzer_ajax_set_analyzer(service_id):
         'id': service_id
     }
 
-    from couchbase.bucket import Bucket as CouchbaseBucket
-    analyzer_db = CouchbaseBucket('couchbase://localhost/analyzers')
+    from web.database import analyzer_db
     import hashlib
     analyzer_key = hashlib.sha256(("%s_%s" % (service_id, data['name'])).encode('utf8')).hexdigest()
     analyzer_db.upsert(analyzer_key, data)

@@ -1,6 +1,7 @@
+pyzmq==14.4.1
 aiozmq==0.5.3
 msgpack-python==0.4.2
 asynqp==0.3
-couchbase
-kazoo
-Crypto
+couchbase==1.2.4
+kazoo==2.0
+pycrypto==2.6.1

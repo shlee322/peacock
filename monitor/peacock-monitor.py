@@ -12,13 +12,18 @@ import json
 @asyncio.coroutine
 def init_monitor():
     import asynqp
+
     global mq_connection, mq_channel
-    mq_connection = yield from asynqp.connect('localhost', 5672, username='guest', password='guest')
+    from monitor.config import MESSAGE_QUEUE_ADDRESS, MESSAGE_QUEUE_PORT, MESSAGE_QUEUE_USER, MESSAGE_QUEUE_PASSWORD
+
+    mq_connection = yield from asynqp.connect(MESSAGE_QUEUE_ADDRESS, MESSAGE_QUEUE_PORT,
+                                              username=MESSAGE_QUEUE_USER, password=MESSAGE_QUEUE_PASSWORD)
     mq_channel = yield from mq_connection.open_channel()
 
     exchange = yield from mq_channel.declare_exchange('monitor_queue', 'topic')
 
     from monitor.messagequeue import set_channel, set_exchange
+
     set_channel(mq_channel)
     set_exchange(exchange)
 
@@ -34,6 +39,7 @@ def handler(websocket, path):
 if __name__ == '__main__':
     loop = asyncio.get_event_loop()
     loop.run_until_complete(init_monitor())
-    start_server = websockets.serve(handler, '0.0.0.0', 7000)
+    from monitor.config import BIND_ADDRESS, BIND_PORT
+    start_server = websockets.serve(handler, BIND_ADDRESS, BIND_PORT)
     loop.run_until_complete(start_server)
     loop.run_forever()

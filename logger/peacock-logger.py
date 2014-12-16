@@ -97,7 +97,9 @@ class LoggerZmqProtocol(aiozmq.ZmqProtocol):
 
 @asyncio.coroutine
 def init_logger():
-    messagequeue_conn = yield from asynqp.connect('localhost', 5672, username='guest', password='guest')
+    from logger.config import MESSAGE_QUEUE_ADDRESS, MESSAGE_QUEUE_PORT, MESSAGE_QUEUE_USER, MESSAGE_QUEUE_PASSWORD
+    messagequeue_conn = yield from asynqp.connect(MESSAGE_QUEUE_ADDRESS, MESSAGE_QUEUE_PORT,
+                                                  username=MESSAGE_QUEUE_USER, password=MESSAGE_QUEUE_PASSWORD)
     messagequeue_channel = yield from messagequeue_conn.open_channel()
 
     global messagequeue_exchange

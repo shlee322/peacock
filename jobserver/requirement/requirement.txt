@@ -1,6 +1,6 @@
 aiozmq==0.5.3
 msgpack-python==0.4.2
 asynqp==0.3
-couchbase
-kazoo
+couchbase==1.2.4
+kazoo==2.0
 lupa==1.1

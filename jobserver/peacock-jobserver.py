@@ -24,16 +24,18 @@ def init_jobserver():
     MessageQueue랑 커넥션을 맺는다.
     """
     global mq_connection, mq_channel
-    mq_connection = yield from asynqp.connect('localhost', 5672, username='guest', password='guest')
+    from jobserver.config import MESSAGE_QUEUE_ADDRESS, MESSAGE_QUEUE_PORT, MESSAGE_QUEUE_USER, MESSAGE_QUEUE_PASSWORD
+
+    mq_connection = yield from asynqp.connect(MESSAGE_QUEUE_ADDRESS, MESSAGE_QUEUE_PORT,
+                                              username=MESSAGE_QUEUE_USER, password=MESSAGE_QUEUE_PASSWORD)
     mq_channel = yield from mq_connection.open_channel()
 
     from jobserver.messagequeue import set_exchange, set_monitor_queue
+
     exchange = yield from mq_channel.declare_exchange('peacock_job.exchange', 'direct')
     monitor_queue = yield from mq_channel.declare_exchange('monitor_queue', 'topic')
     set_exchange(exchange)
     set_monitor_queue(monitor_queue)
-
-
 
 
 @asyncio.coroutine
@@ -52,7 +54,7 @@ def job_node_processor(node_index):
         message = yield from queue.get()
 
         # Job Server가 처리해야할 큐 범위가 달라져서 처리하면 안될 경우 무한 루프를 빠져나감
-        if not(node_start_queue_id <= node_index <= node_end_queue_id):
+        if not (node_start_queue_id <= node_index <= node_end_queue_id):
             jobs[node_index] = None
 
             # 메시지를 받아온 경우 실패 처리 (다시 큐에 넣음)
@@ -93,13 +95,14 @@ def job_node_watch(nodes):
 
     # 이 Job Server의 index를 구해옴
     from jobserver.config import JOB_RING_SIZE
+
     ring_size = JOB_RING_SIZE / len(nodes)
     node_index = nodes.index(my_node_name)
 
     # Job Server가 처리해야할 queue id를 구함
     global node_start_queue_id, node_end_queue_id
     node_start_queue_id = int(node_index * ring_size)
-    node_end_queue_id = int((node_index+1) * ring_size - 1)
+    node_end_queue_id = int((node_index + 1) * ring_size - 1)
     logging.info("node_start_queue_id = %d, node_end_queue_id = %d" % (node_start_queue_id, node_end_queue_id))
 
     # 큐 처리
@@ -130,13 +133,14 @@ def join_peacock_network():
     주키퍼에 watch를 등록하고 해당 노드를 가입시킨다.
     """
     from config import ZOOKEEPER_HOST
+
     zk = KazooClient(hosts=ZOOKEEPER_HOST)
     zk.start()
 
     zk.ChildrenWatch("/peacock/job/nodes", job_node_watch)
     my_node = zk.create("/peacock/job/nodes/node", ephemeral=True, sequence=True, makepath=True)
     global my_node_name
-    my_node_name = my_node[my_node.rfind('/')+1:]
+    my_node_name = my_node[my_node.rfind('/') + 1:]
     job_node_watch(zk.get_children("/peacock/job/nodes"))
 
 
