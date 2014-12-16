@@ -1,6 +1,6 @@
 aiozmq==0.5.3
 msgpack-python==0.4.2
 asynqp==0.3
-couchbase==1.2.4
+git+https://github.com/couchbase/couchbase-python-client.git
 kazoo==2.0
 lupa==1.1

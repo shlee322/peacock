@@ -3,5 +3,6 @@ Jinja2==2.7.3
 PyMySQL==0.6.3
 bcrypt==1.0.2
 redis==2.10.3
-kazoo
-Crypto
+kazoo==2.0
+pycrypto==2.6.1
+git+https://github.com/couchbase/couchbase-python-client.git

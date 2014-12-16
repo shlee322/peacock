@@ -108,7 +108,7 @@ def init_logger():
     from config import BIND_ADDRESS
     yield from aiozmq.create_zmq_connection(
         lambda: LoggerZmqProtocol(), zmq.REP,
-        bind='tcp://%s' % BIND_ADDRESS)
+        bind='tcp://0.0.0.0:6000')
 
 
 def set_python_logger():

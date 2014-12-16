@@ -1,4 +1,4 @@
 websockets==2.3
-couchbase==1.2.4
+git+https://github.com/couchbase/couchbase-python-client.git
 msgpack-python==0.4.2
 asynqp==0.3
